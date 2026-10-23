@@ -431,10 +431,11 @@ The [public reference](../public-docs/plugins/reference.md#icons) owns the autho
 Follow the [service registration contract](../public-docs/plugins/reference.md#register-an-mcp-service)
 for the author API, transports, lifecycle and version requirements.
 
-Plugin MCP definitions are launch-only contributions. Providers can copy launch configuration into
-persistence metadata, so the Agent manager must preserve manual MCP entries and exclude plugin
-contributions from every saved handle, including import and later persistence refreshes. Otherwise
-revoked definitions and credentials can return on resume.
+Host-managed and plugin MCP definitions are launch-only contributions. Providers can copy launch
+configuration into persistence metadata, so the Agent manager must preserve Agent-owned MCP entries
+and exclude host contributions from saved handles, including import and later persistence refreshes.
+Otherwise revoked definitions and credentials can return on resume. Host management behavior is
+documented in the [configuration guide](../public-docs/configuration.md#mcp-services).
 
 MCP-only catalog notifications carry `reason: "mcp"`. Refresh metadata without disposing the client
 installation; disposing it would destroy open settings drafts after a service configuration save.
