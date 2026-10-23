@@ -156,25 +156,18 @@ test.describe("Settings host page", () => {
 
 daemonTest("isolated daemon ignores the parent process password", async () => {
   const previous = process.env.PASEO_PASSWORD;
+  let daemon: Awaited<ReturnType<typeof startIsolatedHostDaemon>> | undefined;
+  let client: Awaited<ReturnType<typeof connectNewWorkspaceDaemonClient>> | undefined;
   process.env.PASEO_PASSWORD = "fictional-inherited-password";
   try {
-    const daemon = await startIsolatedHostDaemon("srv_e2e_inherited_password");
-    try {
-      const client = await connectNewWorkspaceDaemonClient({
-        port: daemon.port,
-        ownProjects: false,
-      });
-      try {
-        const result = await client.getDaemonConfig();
-        expect(result.config).toBeDefined();
-      } finally {
-        await client.close();
-      }
-    } finally {
-      await daemon.close();
-    }
+    daemon = await startIsolatedHostDaemon("srv_e2e_inherited_password");
+    client = await connectNewWorkspaceDaemonClient({ port: daemon.port, ownProjects: false });
+    await client.patchDaemonConfig({ appendSystemPrompt: "isolated-fixture-marker" });
+    const result = await client.getDaemonConfig();
+    expect(result.config.appendSystemPrompt).toBe("isolated-fixture-marker");
   } finally {
     if (previous === undefined) delete process.env.PASEO_PASSWORD;
     else process.env.PASEO_PASSWORD = previous;
+    await Promise.all([client?.close(), daemon?.close()]);
   }
 });
