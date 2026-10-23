@@ -970,7 +970,7 @@ test("MCP services distinguishes a failed load from an empty list and retries", 
 });
 
 test("MCP services asks an older host to update", async ({ page }) => {
-  await advertisePluginCapabilities(page, { pluginMcpServers: false });
+  await advertisePluginCapabilities(page, { mcpServiceManagement: false });
   await gotoAppShell(page);
   await expect(page.getByTestId("sidebar-mcp")).toHaveCount(0);
   await openSettings(page);
@@ -1118,7 +1118,20 @@ test("MCP services ignores old host responses while switching hosts", async ({
     });
   });
   try {
-    await client.patchDaemonConfig({ pluginsEnabled: true });
+    await client.patchDaemonConfig({
+      pluginsEnabled: true,
+      mcpServers: {
+        hostrace: {
+          name: "Primary private service",
+          enabled: true,
+          config: {
+            type: "http",
+            url: "https://primary.invalid/mcp",
+            headers: { authorization: "fictional-primary-private" },
+          },
+        },
+      },
+    });
     await client.installDirectoryPlugin(example.directory);
     await seedSavedSettingsHosts(page, [
       {
@@ -1134,6 +1147,7 @@ test("MCP services ignores old host responses while switching hosts", async ({
     ]);
     await page.goto(`/settings/hosts/${getServerId()}/mcp`);
     await expect(page.getByTestId("mcp-service-repository-mcp")).toBeVisible();
+    await expect(page.getByTestId("mcp-manual-hostrace")).toBeVisible();
     hold = true;
     await client.reloadPlugin("repository-mcp");
     await expect.poll(() => held.length).toBeGreaterThan(0);
@@ -1152,6 +1166,7 @@ test("MCP services ignores old host responses while switching hosts", async ({
     hold = false;
     for (const reply of held.splice(0)) reply.send(reply.message);
     await expect(page.getByTestId("mcp-service-repository-mcp")).toHaveCount(0);
+    await expect(page.getByTestId("mcp-manual-hostrace")).toHaveCount(0);
     await expect(page).toHaveURL(new RegExp(`/settings/hosts/${second.serverId}/mcp$`));
     await expect(
       page.getByText("No MCP services registered", { exact: true }).filter({ visible: true }),
@@ -1164,8 +1179,129 @@ test("MCP services ignores old host responses while switching hosts", async ({
   } finally {
     hold = false;
     for (const reply of held.splice(0)) reply.send(reply.message);
+    await client.patchDaemonConfig({ mcpServers: { hostrace: null } });
     await client.removePlugin("repository-mcp");
     await example.cleanup();
     await second.close();
   }
+});
+
+test("manual MCP management saves all transports and preserves edits through refresh and failed saves", async ({
+  page,
+  pluginEnvironment,
+}, testInfo) => {
+  const { client } = pluginEnvironment;
+  const previous = (await client.getDaemonConfig()).config.mcpServers ?? {};
+  try {
+    await gotoAppShell(page);
+    await openSettings(page);
+    await page.getByTestId("settings-host-section-mcp").click();
+    await page.getByTestId("mcp-add").click();
+    await page.getByTestId("mcp-name").fill("Local tools");
+    await page.getByTestId("mcp-command").fill("fictional-mcp-not-installed");
+    await page.getByTestId("mcp-args").fill('["--read-only"]');
+    await page.getByTestId("mcp-env").fill('{"TOKEN":"fictional-ui-secret"}');
+    await page.screenshot({ path: testInfo.outputPath("manual-mcp-form.png"), fullPage: true });
+    await page.getByTestId("mcp-save").click();
+    const rows = page.locator('[data-testid^="mcp-manual-"]');
+    await expect(rows).toContainText(["Local tools"]);
+    await expect(rows).not.toContainText("fictional-ui-secret");
+    let entries = Object.entries((await client.getDaemonConfig()).config.mcpServers ?? {});
+    const [id, local] = entries.find(([, value]) => value.name === "Local tools")!;
+    expect(local.config).toEqual({
+      type: "stdio",
+      command: "fictional-mcp-not-installed",
+      args: ["--read-only"],
+      env: { TOKEN: "fictional-ui-secret" },
+    });
+    await rows.getByRole("button", { name: "Edit", exact: true }).click();
+    await page.getByTestId("mcp-name").fill("Remote tools");
+    await client.patchDaemonConfig({
+      mcpServers: {
+        external: {
+          name: "Concurrent tools",
+          enabled: true,
+          config: { type: "http", url: "https://example.invalid/concurrent" },
+        },
+      },
+    });
+    await expect(rows).toContainText(["Local tools", "Concurrent tools"]);
+    await expect(page.getByTestId("mcp-name")).toHaveValue("Remote tools");
+    await page.getByTestId("mcp-transport-trigger").click();
+    await page.getByRole("button", { name: "HTTP", exact: true }).click();
+    await page.getByTestId("mcp-url").fill("https://example.invalid/mcp");
+    await page.getByTestId("mcp-headers").fill('{"Authorization":"fictional-http-secret"}');
+    await page.getByTestId("mcp-save").click();
+    expect((await client.getDaemonConfig()).config.mcpServers?.[id]?.config).toEqual({
+      type: "http",
+      url: "https://example.invalid/mcp",
+      headers: { Authorization: "fictional-http-secret" },
+    });
+    await page
+      .getByTestId(`mcp-manual-${id}`)
+      .getByRole("button", { name: "Edit", exact: true })
+      .click();
+    await page.getByTestId("mcp-name").fill("Concurrent tools");
+    await page.getByTestId("mcp-save").click();
+    await expect(
+      page.getByText("An MCP service with this name already exists. Choose another name.", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(page.getByTestId("mcp-name")).toHaveValue("Concurrent tools");
+    await page.getByTestId("mcp-name").fill("Events");
+    await page.getByTestId("mcp-transport-trigger").click();
+    await page.getByRole("button", { name: "SSE", exact: true }).click();
+    await page.getByTestId("mcp-headers").fill("{}");
+    await page.getByTestId("mcp-save").focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId(`mcp-manual-${id}`)).toContainText("Events");
+    expect((await client.getDaemonConfig()).config.mcpServers?.[id]?.config).toEqual({
+      type: "sse",
+      url: "https://example.invalid/mcp",
+      headers: {},
+    });
+    await page.screenshot({ path: testInfo.outputPath("manual-mcp-desktop.png"), fullPage: true });
+  } finally {
+    const current = (await client.getDaemonConfig()).config.mcpServers ?? {};
+    await client.patchDaemonConfig({
+      mcpServers: {
+        ...Object.fromEntries(Object.keys(current).map((id) => [id, null])),
+        ...previous,
+      },
+    });
+  }
+});
+
+test.describe("manual MCP compact", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+  test("adds a service with touch without horizontal overflow", async ({
+    page,
+    pluginEnvironment,
+  }, testInfo) => {
+    const { client } = pluginEnvironment;
+    try {
+      await gotoAppShell(page);
+      await openCompactSettings(page, buildOpenProjectRoute());
+      await page.getByTestId("settings-host-section-mcp").tap();
+      await page.getByTestId("mcp-add").tap();
+      await page.getByTestId("mcp-name").fill("Phone tools");
+      await page.getByTestId("mcp-command").fill("fictional-mobile-mcp");
+      await page.getByTestId("mcp-save").tap();
+      await expect(page.getByText("Phone tools", { exact: true })).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+      await page.screenshot({ path: testInfo.outputPath("manual-mcp-touch.png"), fullPage: true });
+    } finally {
+      const services = (await client.getDaemonConfig()).config.mcpServers ?? {};
+      await client.patchDaemonConfig({
+        mcpServers: Object.fromEntries(
+          Object.entries(services)
+            .filter(([, value]) => value.name === "Phone tools")
+            .map(([id]) => [id, null]),
+        ),
+      });
+    }
+  });
 });

@@ -12121,7 +12121,11 @@ test("plugin MCP definitions follow real create, resume and import without becom
     async importSession(input: ImportProviderSessionInput, context: ImportProviderSessionContext) {
       const config = {
         ...context.config,
-        mcpServers: { ...context.config.mcpServers, imported_manual: manual },
+        mcpServers: {
+          ...context.config.mcpServers,
+          imported_manual: manual,
+          paseo_manual_removed: { type: "http" as const, url: "https://removed.example/mcp" },
+        },
       };
       const session = new PrivateMcpSession(config);
       return {
@@ -12137,7 +12141,7 @@ test("plugin MCP definitions follow real create, resume and import without becom
     clients: { codex: client },
     registry: storage,
     logger,
-    pluginMcpServers: () => definitions,
+    runtimeMcpServers: () => definitions,
   });
   onTestFinished(async () => {
     for (const agent of manager.listAgents()) await manager.closeAgent(agent.id);

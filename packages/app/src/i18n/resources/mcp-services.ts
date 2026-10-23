@@ -1,5 +1,24 @@
+const management = {
+  name: "Name",
+  transport: "Transport",
+  command: "Command",
+  args: "Arguments (JSON string array)",
+  env: "Environment (JSON string map)",
+  headers: "Headers (JSON string map)",
+  invalid:
+    "Enter a name and valid connection fields. Arguments must be a JSON string array; environment and headers must be JSON objects with string values.",
+  nameExists: "An MCP service with this name already exists. Choose another name.",
+  saveError: "Unable to save MCP service. Retry.",
+  saving: "Saving…",
+  saved: "MCP service saved",
+  add: "Add MCP service",
+  edit: "Edit",
+  manual: "Manual",
+  disabled: "Disabled",
+} as const;
 export const mcpServices = {
   en: {
+    ...management,
     title: "MCP services",
     registered: "Registered",
     unconfigured: "Not configured",
@@ -13,6 +32,23 @@ export const mcpServices = {
       "New or re-established Agent runtimes receive the current configuration. Existing Agent connections are not changed.",
   },
   "zh-CN": {
+    ...management,
+    name: "名称",
+    transport: "传输方式",
+    command: "命令",
+    args: "参数（JSON 字符串数组）",
+    env: "环境变量（JSON 字符串对象）",
+    headers: "请求头（JSON 字符串对象）",
+    invalid:
+      "请填写名称及有效连接配置。参数须为 JSON 字符串数组，环境变量与请求头须为值为字符串的 JSON 对象。",
+    nameExists: "已存在同名 MCP 服务，请使用其他名称。",
+    saveError: "无法保存 MCP 服务，请重试。",
+    saving: "正在保存…",
+    saved: "MCP 服务已保存",
+    add: "添加 MCP 服务",
+    edit: "编辑",
+    manual: "手动",
+    disabled: "已停用",
     title: "MCP 服务",
     registered: "已注册",
     unconfigured: "未配置",
@@ -25,6 +61,7 @@ export const mcpServices = {
     runtimeHint: "新建或重新建立的 Agent 运行实例会使用当前配置。现有 Agent 连接不受影响。",
   },
   ar: {
+    ...management,
     title: "خدمات MCP",
     registered: "مسجّلة",
     unconfigured: "غير مضبوطة",
@@ -38,6 +75,7 @@ export const mcpServices = {
       "تتلقى مثيلات تشغيل الوكيل الجديدة أو المعاد إنشاؤها الإعدادات الحالية. لا تتغير اتصالات الوكيل القائمة.",
   },
   es: {
+    ...management,
     title: "Servicios MCP",
     registered: "Registrado",
     unconfigured: "Sin configurar",
@@ -51,6 +89,7 @@ export const mcpServices = {
       "Los entornos de Agent nuevos o restablecidos reciben la configuración actual. Las conexiones existentes no cambian.",
   },
   fr: {
+    ...management,
     title: "Services MCP",
     registered: "Enregistré",
     unconfigured: "Non configuré",
@@ -64,6 +103,7 @@ export const mcpServices = {
       "Les instances Agent nouvelles ou rétablies reçoivent la configuration actuelle. Les connexions existantes ne changent pas.",
   },
   ja: {
+    ...management,
     title: "MCP サービス",
     registered: "登録済み",
     unconfigured: "未設定",
@@ -77,6 +117,7 @@ export const mcpServices = {
       "新規または再確立された Agent ランタイムは現在の設定を受け取ります。既存の接続は変更されません。",
   },
   ko: {
+    ...management,
     title: "MCP 서비스",
     registered: "등록됨",
     unconfigured: "미설정",
@@ -90,6 +131,7 @@ export const mcpServices = {
       "새로 만들거나 다시 연결한 Agent 런타임은 현재 설정을 받습니다. 기존 Agent 연결은 변경되지 않습니다.",
   },
   "pt-BR": {
+    ...management,
     title: "Serviços MCP",
     registered: "Registrado",
     unconfigured: "Não configurado",
@@ -103,6 +145,7 @@ export const mcpServices = {
       "Novas instâncias do Agent ou instâncias restabelecidas recebem a configuração atual. As conexões existentes não mudam.",
   },
   ru: {
+    ...management,
     title: "Сервисы MCP",
     registered: "Зарегистрирован",
     unconfigured: "Не настроен",

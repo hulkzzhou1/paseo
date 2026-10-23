@@ -1,3 +1,7 @@
+import { loadConfig } from "../config.js";
+import { createPaseoDaemon } from "../bootstrap.js";
+import { BuiltinPluginLoader } from "../plugins/builtin/index.js";
+import pino from "pino";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -290,5 +294,181 @@ test("the formal example shares fictional business behavior between ordinary UI 
     await daemon.close();
     demo.kill();
     await exited;
+  }
+}, 60_000);
+
+test("manual MCP saves replace individual definitions and distribute only to new Agent runtimes", async () => {
+  const launches: AgentSessionConfig[] = [];
+  const daemon = await createTestPaseoDaemon({
+    mcpEnabled: false,
+    agentClients: {
+      codex: createTestAgentClient("codex", {
+        supportsMcpServers: true,
+        beforeCreateSession: async (config) => {
+          launches.push(config);
+        },
+      }),
+    },
+  });
+  const client = new DaemonClient({ url: `ws://127.0.0.1:${daemon.port}/ws` });
+  try {
+    await client.connect();
+    const first = {
+      name: "repository",
+      enabled: true,
+      config: {
+        type: "stdio" as const,
+        command: "nonexistent-mcp-test-command",
+        args: ["--flag"],
+        env: { TOKEN: "fictional-secret" },
+      },
+    };
+    await client.patchDaemonConfig({ mcpServers: { first } });
+    expect((await client.getDaemonConfig()).config.mcpServers).toEqual({ first });
+    await expect(
+      client.patchDaemonConfig({
+        mcpServers: { invalid: { ...first, config: { type: "http", url: "file:///private" } } },
+      }),
+    ).rejects.toThrow();
+    await expect(
+      client.patchDaemonConfig({
+        mcpServers: { invalid: { ...first, config: { type: "stdio", command: "   " } } },
+      }),
+    ).rejects.toThrow();
+    expect((await client.getDaemonConfig()).config.mcpServers).toEqual({ first });
+    expect(launches).toEqual([]);
+    await client.fetchAgents({ subscribe: {} });
+    const agent = await client.createAgent({ provider: "codex", cwd: daemon.paseoHome });
+    expect(launches[0].mcpServers).toEqual({ paseo_manual_first: first.config });
+    expect(JSON.stringify(agent)).not.toContain("fictional-secret");
+    const second = {
+      name: "events",
+      enabled: true,
+      config: {
+        type: "sse" as const,
+        url: "https://invalid.example/sse",
+        headers: { authorization: "fictional-header" },
+      },
+    };
+    await client.patchDaemonConfig({ mcpServers: { second } });
+    const edited = {
+      ...first,
+      config: { type: "http" as const, url: "https://invalid.example/mcp" },
+    };
+    await client.patchDaemonConfig({ mcpServers: { first: edited } });
+    expect((await client.getDaemonConfig()).config.mcpServers).toEqual({ first: edited, second });
+    expect(launches).toHaveLength(1);
+    await expect(client.patchDaemonConfig({ mcpServers: { duplicate: edited } })).rejects.toThrow(
+      "name",
+    );
+    expect((await client.getDaemonConfig()).config.mcpServers).toEqual({ first: edited, second });
+    const next = await client.createAgent({ provider: "codex", cwd: daemon.paseoHome });
+    expect(launches[1].mcpServers).toEqual({
+      paseo_manual_first: edited.config,
+      paseo_manual_second: second.config,
+    });
+    await expect(
+      client.createAgent({
+        provider: "codex",
+        cwd: daemon.paseoHome,
+        mcpServers: { paseo_manual_first: edited.config },
+      }),
+    ).rejects.toThrow("conflicts");
+    await client.archiveAgent(agent.id);
+    await client.archiveAgent(next.id);
+  } finally {
+    await client.close();
+    await daemon.close();
+  }
+}, 60_000);
+
+test("manual MCP configuration survives daemon restart and remains isolated by host", async () => {
+  const launches: AgentSessionConfig[] = [];
+  const resumes: AgentSessionConfig[] = [];
+  const clients = {
+    codex: createTestAgentClient("codex", {
+      supportsMcpServers: true,
+      beforeCreateSession: async (config) => {
+        launches.push(config);
+      },
+      beforeResumeSession: async (config) => {
+        resumes.push(config);
+      },
+    }),
+  };
+  const first = await createTestPaseoDaemon({
+    mcpEnabled: false,
+    agentClients: clients,
+    cleanup: false,
+  });
+  const other = await createTestPaseoDaemon({ mcpEnabled: false });
+  const client = new DaemonClient({ url: `ws://127.0.0.1:${first.port}/ws` });
+  const otherClient = new DaemonClient({ url: `ws://127.0.0.1:${other.port}/ws` });
+  let restarted: Awaited<ReturnType<typeof createPaseoDaemon>> | undefined;
+  let restartedClient: DaemonClient | undefined;
+  const service = {
+    name: "Saved service",
+    enabled: true,
+    config: {
+      type: "http" as const,
+      url: "https://invalid.example/mcp",
+      headers: { authorization: "fictional-persisted-secret" },
+    },
+  };
+  try {
+    await Promise.all([client.connect(), otherClient.connect()]);
+    await client.patchDaemonConfig({ mcpServers: { persistent: service } });
+    expect((await otherClient.getDaemonConfig()).config.mcpServers).toEqual({});
+    await client.fetchAgents({ subscribe: {} });
+    const agent = await client.createAgent({
+      provider: "codex",
+      cwd: first.paseoHome,
+      mcpServers: { personal: { type: "http", url: "https://personal.example/mcp" } },
+    });
+    const edited = {
+      ...service,
+      config: { type: "sse" as const, url: "https://invalid.example/events" },
+    };
+    await client.patchDaemonConfig({ mcpServers: { persistent: edited } });
+    expect(resumes).toEqual([]);
+    await client.refreshAgent(agent.id);
+    expect(resumes[0].mcpServers).toEqual({
+      personal: { type: "http", url: "https://personal.example/mcp" },
+      paseo_manual_persistent: edited.config,
+    });
+    await client.archiveAgent(agent.id);
+    await client.close();
+    await first.close();
+    restarted = await createPaseoDaemon(
+      {
+        ...first.config,
+        ...loadConfig(first.paseoHome, { env: {} }),
+        listen: "127.0.0.1:0",
+        relayEnabled: false,
+        mcpEnabled: false,
+        agentClients: clients,
+        staticDir: first.staticDir,
+      },
+      pino({ level: "silent" }),
+      { builtinPlugins: new BuiltinPluginLoader(undefined, []) },
+    );
+    await restarted.start();
+    const target = restarted.getListenTarget();
+    if (target?.type !== "tcp") throw new Error("Missing isolated listener");
+    restartedClient = new DaemonClient({ url: `ws://127.0.0.1:${target.port}/ws` });
+    await restartedClient.connect();
+    expect((await restartedClient.getDaemonConfig()).config.mcpServers).toEqual({
+      persistent: edited,
+    });
+    expect((await otherClient.getDaemonConfig()).config.mcpServers).toEqual({});
+  } finally {
+    await restartedClient?.close();
+    await restarted?.stop();
+    await client.close();
+    await first.close();
+    await otherClient.close();
+    await other.close();
+    await rm(path.dirname(first.paseoHome), { recursive: true, force: true });
+    await rm(first.staticDir, { recursive: true, force: true });
   }
 }, 60_000);

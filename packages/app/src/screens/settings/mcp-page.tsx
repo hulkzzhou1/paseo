@@ -1,8 +1,14 @@
 import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
-import type { PluginListItem, PluginMcpServiceSummary } from "@getpaseo/protocol/messages";
+import type {
+  ManagedMcpService,
+  PluginListItem,
+  PluginMcpServiceSummary,
+} from "@getpaseo/protocol/messages";
 import { useQueryClient } from "@tanstack/react-query";
+import { randomUUID } from "expo-crypto";
+import { McpServiceForm } from "./mcp-service-form";
 import { router } from "expo-router";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { SettingsCard, SettingsRow, SettingsSection } from "@/components/settings";
@@ -70,6 +76,8 @@ function McpServices({
 }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const [editing, setEditing] = useState<{ id: string; service?: ManagedMcpService } | null>(null);
+  const [saved, setSaved] = useState(false);
   const hostLabel = useHosts().find((host) => host.serverId === serverId)?.label ?? serverId;
   const queryKey = useMemo(
     () => ["plugin-mcp-services", serverId, clientGeneration, connectionEpoch] as const,
@@ -78,9 +86,9 @@ function McpServices({
   const services = useFetchQuery({
     queryKey,
     queryFn: async ({ signal }) => {
-      const plugins = await client.listPlugins();
+      const [plugins, config] = await Promise.all([client.listPlugins(), client.getDaemonConfig()]);
       signal.throwIfAborted();
-      return { plugins };
+      return { plugins, manual: config.config.mcpServers ?? {} };
     },
     dataShape: "value",
     staleTimeMs: 0,
@@ -91,7 +99,10 @@ function McpServices({
     await queryClient.invalidateQueries({ queryKey, exact: true });
   }, [queryClient, queryKey]);
   useEffect(() => {
-    const observation = client.observeEvents(["status.plugin_catalog_changed"]);
+    const observation = client.observeEvents([
+      "status.plugin_catalog_changed",
+      "status.daemon_config_changed",
+    ]);
     observation.subscribe({
       snapshot: () => {
         void refresh();
@@ -109,33 +120,69 @@ function McpServices({
   const retry = useCallback(() => {
     void refresh();
   }, [refresh]);
-  if (services.isError)
+  const add = useCallback(() => {
+    setSaved(false);
+    setEditing({ id: `m${randomUUID()}` });
+  }, []);
+  const cancel = useCallback(() => setEditing(null), []);
+  const edit = useCallback((id: string, service: ManagedMcpService) => {
+    setSaved(false);
+    setEditing({ id, service });
+  }, []);
+  const save = useCallback(
+    async (service: ManagedMcpService) => {
+      if (!editing) return;
+      await client.patchDaemonConfig({ mcpServers: { [editing.id]: service } });
+      setEditing(null);
+      setSaved(true);
+      await refresh();
+    },
+    [client, editing, refresh],
+  );
+  if (services.isError && !services.data)
     return (
-      <Alert variant="error" title={t("mcp.loadError")} description={services.error.message}>
+      <Alert variant="error" title={t("mcp.loadError")}>
         <Button variant="outline" size="sm" onPress={retry}>
           {t("common.actions.retry")}
         </Button>
       </Alert>
     );
-  if (services.isPending) return <Alert title={t("mcp.loading")} />;
+  if (services.isPending && !services.data) return <Alert title={t("mcp.loading")} />;
   const plugins = services.data?.plugins.filter((plugin) => plugin.mcpServer) ?? [];
+  const manual = Object.entries(services.data?.manual ?? {});
   return (
     <SettingsSection title={hostLabel} info={t("mcp.runtimeHint")} testID="mcp-services-section">
+      <Button
+        variant="outline"
+        size="sm"
+        testID="mcp-add"
+        onPress={add}
+        disabled={editing !== null}
+      >
+        {t("mcp.add")}
+      </Button>
+      {saved ? <Alert title={t("mcp.saved")} /> : null}
+      {editing ? (
+        <McpServiceForm key={editing.id} service={editing.service} save={save} cancel={cancel} />
+      ) : null}
+      {services.isError ? <Alert variant="error" title={t("mcp.loadError")} /> : null}
       <SettingsCard>
-        {plugins.length ? (
-          plugins.map((plugin) =>
-            plugin.mcpServer ? (
-              <McpServiceRow
-                key={plugin.id}
-                serverId={serverId}
-                plugin={plugin}
-                service={plugin.mcpServer}
-              />
-            ) : null,
-          )
-        ) : (
-          <SettingsRow label={t("mcp.empty")} />
-        )}
+        {manual.map(([id, service]) => (
+          <ManualMcpRow key={id} id={id} service={service} edit={edit} editing={editing !== null} />
+        ))}
+        {plugins.length
+          ? plugins.map((plugin) =>
+              plugin.mcpServer ? (
+                <McpServiceRow
+                  key={plugin.id}
+                  serverId={serverId}
+                  plugin={plugin}
+                  service={plugin.mcpServer}
+                />
+              ) : null,
+            )
+          : null}
+        {!plugins.length && !manual.length ? <SettingsRow label={t("mcp.empty")} /> : null}
       </SettingsCard>
     </SettingsSection>
   );
@@ -144,7 +191,7 @@ function McpServices({
 export function HostMcpPage({ serverId }: { serverId: string }) {
   const { t } = useTranslation();
   const host = useHostRuntimeSnapshot(serverId);
-  const supported = useHostFeature(serverId, "pluginMcpServers");
+  const supported = useHostFeature(serverId, "mcpServiceManagement");
   if (host?.connectionStatus !== "online" || !host.client)
     return <Alert variant="warning" title={t("mcp.offline")} />;
   if (!supported) return <Alert variant="warning" title={t("mcp.updateHost")} />;
@@ -158,5 +205,37 @@ export function HostMcpPage({ serverId }: { serverId: string }) {
         connectionEpoch={host.connectionEpoch}
       />
     </View>
+  );
+}
+
+function ManualMcpRow({
+  id,
+  service,
+  edit,
+  editing,
+}: {
+  id: string;
+  service: ManagedMcpService;
+  edit: (id: string, service: ManagedMcpService) => void;
+  editing: boolean;
+}) {
+  const { t } = useTranslation();
+  const onEdit = useCallback(() => edit(id, service), [edit, id, service]);
+  const badge = useMemo(
+    () =>
+      !service.enabled ? <StatusBadge label={t("mcp.disabled")} variant="muted" /> : undefined,
+    [service.enabled, t],
+  );
+  return (
+    <SettingsRow
+      label={service.name}
+      hint={`${t("mcp.manual")} · ${TRANSPORT_LABELS[service.config.type]}`}
+      testID={`mcp-manual-${id}`}
+      labelAccessory={badge}
+    >
+      <Button variant="outline" size="sm" disabled={editing} onPress={onEdit}>
+        {t("mcp.edit")}
+      </Button>
+    </SettingsRow>
   );
 }

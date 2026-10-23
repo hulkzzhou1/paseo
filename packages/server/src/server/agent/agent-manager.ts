@@ -83,7 +83,11 @@ import {
 import { invokeRewindCapability, type RewindMode } from "./rewind/rewind.js";
 import { parseAgentMessage, projectAgentMessages } from "./agent-messages/index.js";
 import { isStaleProviderSessionError } from "./stale-provider-session-error.js";
-import { stripInternalPaseoMcpServer, withRuntimePaseoMcpServer } from "./runtime-mcp-config.js";
+import {
+  MANUAL_MCP_SERVER_PREFIX,
+  stripInternalPaseoMcpServer,
+  withRuntimePaseoMcpServer,
+} from "./runtime-mcp-config.js";
 import { resolveCreateAgentTitles } from "./create-agent-title.js";
 import type { PaseoToolCatalogFactory } from "./tools/types.js";
 import { isPaseoToolPolicyEnabled } from "./paseo-tool-policy.js";
@@ -169,7 +173,7 @@ interface PreparedSessionConfig {
   storedConfig: AgentSessionConfig;
   launchConfig: AgentSessionConfig;
   paseoToolPolicy: ProviderPaseoToolsPolicy | undefined;
-  pluginMcpNames: readonly string[];
+  runtimeMcpNames: readonly string[];
 }
 
 interface NormalizeConfigOptions {
@@ -322,7 +326,7 @@ export interface CreateAgentOptions {
 
 export interface AgentManagerOptions {
   pluginLifecycle?: PluginLifecycle;
-  pluginMcpServers?: () => Record<string, McpServerConfig>;
+  runtimeMcpServers?: () => Record<string, McpServerConfig>;
   /** An internal workspace makes every agent created inside it internal. */
   clients?: ProviderClientMap;
   providerDefinitions?: ProviderEnabledMap;
@@ -736,7 +740,7 @@ export interface RetiredInternalAgent {
 
 export class AgentManager {
   private readonly pluginLifecycle: PluginLifecycle | undefined;
-  private readonly pluginMcpServers: AgentManagerOptions["pluginMcpServers"];
+  private readonly runtimeMcpServers: AgentManagerOptions["runtimeMcpServers"];
   private readonly retiredInternalAgents = new Map<
     string,
     RetiredInternalAgent & { expiresAt: number }
@@ -782,7 +786,7 @@ export class AgentManager {
 
   constructor(options: AgentManagerOptions) {
     this.pluginLifecycle = options.pluginLifecycle;
-    this.pluginMcpServers = options.pluginMcpServers;
+    this.runtimeMcpServers = options.runtimeMcpServers;
     this.timelineStore = options.timelineStore ?? new InMemoryAgentTimelineStore();
     this.idFactory = options.idFactory ?? (() => randomUUID());
     this.registry = options?.registry;
@@ -1477,7 +1481,7 @@ export class AgentManager {
       throw new Error(`Provider '${input.provider}' does not support importing sessions`);
     }
 
-    const { storedConfig, launchConfig, paseoToolPolicy, pluginMcpNames } =
+    const { storedConfig, launchConfig, paseoToolPolicy, runtimeMcpNames } =
       await this.prepareSessionConfig(
         {
           provider: input.provider,
@@ -1506,9 +1510,12 @@ export class AgentManager {
     let handedToRegistration = false;
     try {
       let importedBase = stripInternalPaseoMcpServer(imported.config);
-      if (pluginMcpNames.length) {
+      if (importedBase.mcpServers) {
         const importedMcpServers = { ...importedBase.mcpServers };
-        for (const name of pluginMcpNames) delete importedMcpServers[name];
+        for (const name of Object.keys(importedMcpServers)) {
+          if (name.startsWith(MANUAL_MCP_SERVER_PREFIX) || runtimeMcpNames.includes(name))
+            delete importedMcpServers[name];
+        }
         importedBase = {
           ...importedBase,
           mcpServers: Object.keys(importedMcpServers).length ? importedMcpServers : undefined,
@@ -5314,8 +5321,12 @@ export class AgentManager {
     const paseoToolPolicy = this.paseoToolsEnabled
       ? this.resolvePaseoToolPolicy(storedConfig.provider)
       : { enabled: false };
-    const pluginServers = this.pluginMcpServers?.() ?? {};
-    for (const [name, server] of Object.entries(pluginServers)) {
+    for (const name of Object.keys(storedConfig.mcpServers ?? {})) {
+      if (name.startsWith(MANUAL_MCP_SERVER_PREFIX))
+        throw new PluginMcpError({ code: "MCP_NAME_CONFLICT", serviceName: name });
+    }
+    const runtimeServers = this.runtimeMcpServers?.() ?? {};
+    for (const [name, server] of Object.entries(runtimeServers)) {
       if (Object.hasOwn(storedConfig.mcpServers ?? {}, name))
         throw new PluginMcpError({ code: "MCP_NAME_CONFLICT", serviceName: name });
       if (server.type === "stdio" && server.cwd && storedConfig.provider !== "codex")
@@ -5327,8 +5338,8 @@ export class AgentManager {
     }
     const launchConfig = this.applyDaemonAppendSystemPrompt(
       withRuntimePaseoMcpServer({
-        config: Object.keys(pluginServers).length
-          ? { ...storedConfig, mcpServers: { ...storedConfig.mcpServers, ...pluginServers } }
+        config: Object.keys(runtimeServers).length
+          ? { ...storedConfig, mcpServers: { ...storedConfig.mcpServers, ...runtimeServers } }
           : storedConfig,
         agentId,
         mcpBaseUrl:
@@ -5342,7 +5353,7 @@ export class AgentManager {
       storedConfig,
       launchConfig,
       paseoToolPolicy,
-      pluginMcpNames: Object.keys(pluginServers),
+      runtimeMcpNames: Object.keys(runtimeServers),
     };
   }
 
