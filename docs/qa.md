@@ -14,6 +14,12 @@ Every pull request needs evidence for the questions its change touches. Pull req
 For plugin changes, verify the [SDK import boundaries](plugins.md#sdk-import-boundaries) before
 exercising contributions. Include the boundary tests and both runtime loaders in the evidence.
 
+## Scope and review
+
+When the user changes scope, rewrite the affected specification and acceptance criteria before delegating or reviewing the changed work. Hand-offs point to that current source and its revision; superseded requirements stay in history. Review against a fixed code baseline and the current criteria.
+
+For an unused-code finding, trace callers and the receiver's declared type before recommending deletion. For a standards finding, cite the rule and show why its conditions apply; distinguish required feature gates from temporary compatibility shims. Label design judgements separately from rule violations.
+
 ## Evidence
 
 Evidence is something someone else can look at:
@@ -24,7 +30,11 @@ Evidence is something someone else can look at:
 - A video of the interaction
 - Logs, requests, responses
 
+Record each check's code revision, command, exit status and log path. Mark it passed only after observing a completed process with exit status zero; a hand-off summary or the final lines of a log are insufficient.
+
 Redact what you need to, keep the technical details. If an agent did the work, submit its raw output. A summary drops the details someone else needs to check it.
+
+Distinguish local implementation, shared review, merge, and release in completion reports. Before closing an implementation ticket, link the revision and evidence reviewers can access, unless the agreed completion criterion explicitly ends at local implementation. Local paths and ignored artifacts need an accessible copy before external review. Keep delivery outstanding when publication is not authorized; ticket completion does not authorize pushing or releasing.
 
 ## Does it work well
 
