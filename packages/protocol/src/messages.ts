@@ -3691,6 +3691,7 @@ export const ServerInfoStatusPayloadSchema = z
         // so a theme plugin cannot start there at all.
         pluginThemes: z.boolean().optional(),
         pluginSettings: z.boolean().optional(),
+        pluginMcpServers: z.boolean().optional(),
         pluginTimelineItems: z.boolean().optional(),
         // COMPAT(skillManagement): added in v0.4.0, remove gate after 2027-08-16.
         skillManagement: z.boolean().optional(),
@@ -3904,6 +3905,7 @@ export const DaemonConfigChangedStatusPayloadSchema = z
   .passthrough();
 
 export const PluginCatalogChangedStatusPayloadSchema = z.object({
+  reason: z.literal("mcp").optional(),
   status: z.literal("plugin_catalog_changed"),
   pluginId: PluginIdSchema,
 });
@@ -6746,7 +6748,17 @@ export const PluginNpmInstallationSchema = z.object({
   integrity: z.string(),
 });
 
+export const PluginMcpServiceSummarySchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  transport: z.enum(["stdio", "http", "sse"]).nullable(),
+  configured: z.boolean(),
+  settingsScreenId: z.string().optional(),
+});
+export type PluginMcpServiceSummary = z.infer<typeof PluginMcpServiceSummarySchema>;
+
 export const PluginListItemSchema = z.object({
+  mcpServer: PluginMcpServiceSummarySchema.optional(),
   id: PluginIdSchema,
   name: z.string().optional(),
   icon: z.string().optional(),

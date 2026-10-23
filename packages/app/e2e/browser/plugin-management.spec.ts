@@ -1,12 +1,14 @@
+import { startIsolatedHostDaemon } from "../support/helpers/isolated-host-daemon";
+import { getE2EDaemonPort } from "../support/helpers/daemon-port";
 import { existsSync } from "node:fs";
 import overviewCorpus from "../../../protocol/tests/fixtures/plugin-overview.json";
-import { pluginRequirements } from "../support/helpers/plugin-fixture";
+import { copyPluginExample, pluginRequirements } from "../support/helpers/plugin-fixture";
 import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import type { TestInfo } from "@playwright/test";
+import type { TestInfo, WebSocketRoute } from "@playwright/test";
 import { buildOpenProjectRoute } from "@/utils/host-routes";
 import { expect, test as base, type Page } from "../support/fixtures";
 import { gotoAppShell, openSettings } from "../support/helpers/app";
@@ -19,6 +21,8 @@ import {
   openCompactSettings,
   openHostSection,
   openSettingsHost,
+  seedSavedSettingsHosts,
+  selectSettingsHost,
 } from "../support/helpers/settings";
 
 import {
@@ -872,5 +876,249 @@ test("keeps Reload pending past a minute while the plugin queue is busy", async 
     await capturePluginSurface(page, testInfo, "plugin-reload-completed.png");
   } finally {
     await queue.settle();
+  }
+});
+
+test("MCP services links the registered service to its plugin configuration", async ({
+  page,
+  pluginEnvironment,
+}, testInfo) => {
+  const example = await copyPluginExample("repository-mcp");
+  const { client } = pluginEnvironment;
+  try {
+    await client.patchDaemonConfig({ pluginsEnabled: true });
+    await client.installDirectoryPlugin(example.directory);
+    await gotoAppShell(page);
+    await page.getByTestId("sidebar-mcp").click();
+    await expect(page).toHaveURL(new RegExp(`/settings/hosts/${getServerId()}/mcp$`));
+    const service = page.getByTestId("mcp-service-repository-mcp").filter({ visible: true });
+    await expect(service).toContainText("Fictional repositories");
+    await expect(service).toContainText("Not configured");
+    await service.getByRole("button", { name: "Configure", exact: true }).click();
+    await expect(page.getByRole("textbox", { name: "HTTP MCP URL", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "List repositories", exact: true }).click();
+    await expect(page.getByText("demo/orchard", { exact: false })).toBeVisible();
+    await page
+      .getByRole("textbox", { name: "HTTP MCP URL", exact: true })
+      .fill("http://127.0.0.1:9/mcp");
+    await page.getByRole("button", { name: "Save connection", exact: true }).click();
+    await expect(page.getByText("http://127.0.0.1:9/mcp", { exact: true })).toBeVisible();
+    await page.locator('[data-testid="settings-host-section-mcp"]:visible').click();
+    await expect(service).toContainText("Registered");
+    await expect(service).toContainText("HTTP");
+    await expect(service).not.toContainText("127.0.0.1");
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+    await page.screenshot({
+      path: testInfo.outputPath("mcp-services-desktop.png"),
+      fullPage: true,
+    });
+    await client.disablePlugin("repository-mcp");
+    await expect(service).toHaveCount(0);
+    await expect(
+      page
+        .getByText("No plugin MCP services registered", { exact: true })
+        .filter({ visible: true }),
+    ).toBeVisible();
+  } finally {
+    await client.removePlugin("repository-mcp");
+    await example.cleanup();
+  }
+});
+
+test("MCP services asks an older host to update", async ({ page }) => {
+  await advertisePluginCapabilities(page, { pluginMcpServers: false });
+  await gotoAppShell(page);
+  await page.getByTestId("sidebar-mcp").click();
+  await expect(
+    page.getByText("Update this host to manage plugin MCP services", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByTestId("mcp-services-page")).toHaveCount(0);
+});
+
+test.describe("MCP services compact", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+  test("keeps loaded service rows focused during a same-host background refresh", async ({
+    page,
+    pluginEnvironment,
+  }) => {
+    const example = await copyPluginExample("repository-mcp");
+    const { client } = pluginEnvironment;
+    let hold = false;
+    const held: { send(message: string): void; message: string }[] = [];
+    function intercept(browser: WebSocketRoute) {
+      const server = browser.connectToServer();
+      browser.onMessage((message) => server.send(message));
+      server.onMessage((message) => {
+        if (
+          hold &&
+          typeof message === "string" &&
+          JSON.parse(message).message?.type === "plugin.list.response"
+        )
+          held.push({ send: browser.send.bind(browser), message });
+        else browser.send(message);
+      });
+    }
+    await page.routeWebSocket(`**:${getE2EDaemonPort()}/ws`, intercept);
+    try {
+      await client.patchDaemonConfig({ pluginsEnabled: true });
+      await client.installDirectoryPlugin(example.directory);
+      await gotoAppShell(page);
+      await page.getByRole("button", { name: "Open menu", exact: true }).first().tap();
+      await page.getByTestId("sidebar-mcp").tap();
+      const service = page.getByTestId("mcp-service-repository-mcp");
+      const configure = service.getByRole("button", { name: "Configure", exact: true });
+      await expect(service).toContainText("Not configured");
+      await configure.focus();
+      await expect(configure).toBeFocused();
+      hold = true;
+      await client.invokePluginRpc("repository-mcp", "settings.connection.write", {
+        revision: "missing",
+        values: { url: "http://127.0.0.1:9/mcp" },
+      });
+      await expect.poll(() => held.length).toBeGreaterThan(0);
+      await expect(configure).toBeFocused();
+      await expect(service).toContainText("Not configured");
+      hold = false;
+      for (const reply of held.splice(0)) reply.send(reply.message);
+      await expect(service).toContainText("Registered");
+      await expect(configure).toBeFocused();
+    } finally {
+      hold = false;
+      for (const reply of held.splice(0)) reply.send(reply.message);
+      await client.removePlugin("repository-mcp");
+      await example.cleanup();
+    }
+  });
+
+  test("supports touch, keyboard focus and ordinary RPC without horizontal overflow", async ({
+    page,
+    pluginEnvironment,
+  }, testInfo) => {
+    const example = await copyPluginExample("repository-mcp");
+    const { client } = pluginEnvironment;
+    try {
+      await client.patchDaemonConfig({ pluginsEnabled: true });
+      await client.installDirectoryPlugin(example.directory);
+      await gotoAppShell(page);
+      await page.getByRole("button", { name: "Open menu", exact: true }).first().tap();
+      await page.getByTestId("sidebar-mcp").tap();
+      const configure = page
+        .getByTestId("mcp-service-repository-mcp")
+        .getByRole("button", { name: "Configure", exact: true });
+      await expect(configure).toBeVisible();
+      await page.getByTestId("mcp-services-section-info").tap();
+      await expect(
+        page.getByText(
+          "New or re-established Agent runtimes receive the current configuration. Existing Agent connections are not changed.",
+          { exact: true },
+        ),
+      ).toBeVisible();
+      await expect(page.getByRole("tooltip")).toHaveCSS("opacity", "1");
+      await expect(page.getByRole("tooltip")).toBeInViewport({ ratio: 1 });
+      await page.screenshot({
+        path: testInfo.outputPath("mcp-services-touch-info.png"),
+        fullPage: true,
+      });
+      await configure.focus();
+      await page.keyboard.press("Shift+Tab");
+      await page.keyboard.press("Tab");
+      await expect(configure).toBeFocused();
+      await expect(page.getByRole("tooltip")).toHaveCount(0);
+      await page.screenshot({
+        path: testInfo.outputPath("mcp-services-touch.png"),
+        fullPage: true,
+      });
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+      await page.keyboard.press("Enter");
+      await expect(page.getByRole("textbox", { name: "HTTP MCP URL", exact: true })).toBeVisible();
+      await page.getByRole("button", { name: "List repositories", exact: true }).tap();
+      await expect(page.getByText("demo/orchard", { exact: false })).toBeVisible();
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+    } finally {
+      await client.removePlugin("repository-mcp");
+      await example.cleanup();
+    }
+  });
+});
+
+test("MCP services ignores old host responses while switching hosts", async ({
+  page,
+  pluginEnvironment,
+}) => {
+  const second = await startIsolatedHostDaemon("mcp-services-secondary");
+  const example = await copyPluginExample("repository-mcp");
+  const { client } = pluginEnvironment;
+  let hold = false;
+  const held: { send(message: string): void; message: string }[] = [];
+  await page.routeWebSocket(`**:${getE2EDaemonPort()}/ws`, (browser) => {
+    const server = browser.connectToServer();
+    browser.onMessage((message) => server.send(message));
+    server.onMessage((message) => {
+      if (
+        hold &&
+        typeof message === "string" &&
+        JSON.parse(message).message?.type === "plugin.list.response"
+      )
+        held.push({ send: browser.send.bind(browser), message });
+      else browser.send(message);
+    });
+  });
+  try {
+    await client.patchDaemonConfig({ pluginsEnabled: true });
+    await client.installDirectoryPlugin(example.directory);
+    await seedSavedSettingsHosts(page, [
+      {
+        serverId: getServerId(),
+        label: "Primary MCP host",
+        endpoint: `127.0.0.1:${getE2EDaemonPort()}`,
+      },
+      {
+        serverId: second.serverId,
+        label: "Secondary MCP host",
+        endpoint: `127.0.0.1:${second.port}`,
+      },
+    ]);
+    await page.goto(`/settings/hosts/${getServerId()}/mcp`);
+    await expect(page.getByTestId("mcp-service-repository-mcp")).toBeVisible();
+    hold = true;
+    await client.reloadPlugin("repository-mcp");
+    await expect.poll(() => held.length).toBeGreaterThan(0);
+    await selectSettingsHost(page, second.serverId);
+    await expect(
+      page
+        .getByText("No plugin MCP services registered", { exact: true })
+        .filter({ visible: true }),
+    ).toBeVisible();
+    const reconnect = page.waitForEvent("websocket", (socket) =>
+      socket.url().includes(`:${second.port}/ws`),
+    );
+    await second.restart();
+    await reconnect;
+    await expect(
+      page
+        .getByText("No plugin MCP services registered", { exact: true })
+        .filter({ visible: true }),
+    ).toBeVisible();
+    hold = false;
+    for (const reply of held.splice(0)) reply.send(reply.message);
+    await expect(page.getByTestId("mcp-service-repository-mcp")).toHaveCount(0);
+    await expect(page).toHaveURL(new RegExp(`/settings/hosts/${second.serverId}/mcp$`));
+    await expect(
+      page
+        .getByText("No plugin MCP services registered", { exact: true })
+        .filter({ visible: true }),
+    ).toBeVisible();
+  } finally {
+    hold = false;
+    for (const reply of held.splice(0)) reply.send(reply.message);
+    await client.removePlugin("repository-mcp");
+    await example.cleanup();
+    await second.close();
   }
 });
