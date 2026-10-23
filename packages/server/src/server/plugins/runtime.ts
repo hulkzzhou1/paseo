@@ -35,6 +35,9 @@ import type {
 import { PluginProcessMessageSchema } from "./plugin-process-protocol.js";
 import { PluginSessionSocket } from "./session-socket.js";
 import { InternalPluginChild } from "./internal-child.js";
+import { PluginMcpError } from "./mcp-service.js";
+import type { PluginMcpServer } from "@getpaseo/plugin/server";
+import type { McpServerConfig } from "../agent/agent-sdk-types.js";
 import { evaluateBundle } from "./bundle-evaluator.js";
 
 const CLIENT_ENTRY_FILENAMES = ["index.client.ts", "index.client.tsx"] as const;
@@ -67,11 +70,17 @@ interface PendingInvocation {
   timeout: ReturnType<typeof setTimeout>;
 }
 
+interface PluginMcpServiceDefinition {
+  pluginId: string;
+  server: PluginMcpServer;
+}
+
 interface LoadedPlugin {
   id: string;
   requirements: PluginRequirements | undefined;
   clientBundle: string;
   methods: ReadonlySet<string>;
+  mcpServer: PluginMcpServer | null;
   hooks: { events: string[]; before: string[] };
   providers: readonly PluginProviderMetadata[];
   usageSources: readonly PluginUsageSourceMetadata[];
@@ -123,6 +132,7 @@ interface RemoteProviderConnection {
 
 interface PluginRuntimeDependencies {
   settingsDirectory?: string;
+  onMcpChanged?: (pluginId: string) => void;
   onSettingsChanged?: (pluginId: string, settingsId: string) => void;
   spawnChild?: () => PluginChild;
   sessionHost?: PluginPaseoSessionHost;
@@ -506,6 +516,24 @@ export class PluginRuntime {
     this.logTails.delete(pluginId);
   }
 
+  mcpServices(): PluginMcpServiceDefinition[] {
+    return [...this.plugins.values()].flatMap((plugin) =>
+      plugin.mcpServer ? [{ pluginId: plugin.id, server: plugin.mcpServer }] : [],
+    );
+  }
+
+  mcpServers(): Record<string, McpServerConfig> {
+    const result: Record<string, McpServerConfig> = {};
+    for (const { pluginId, server } of this.mcpServices()) {
+      if (!server.config) continue;
+      const name = `plugin_${pluginId.replace(/[^a-zA-Z0-9_-]/g, "_")}_${server.id}`;
+      if (Object.hasOwn(result, name))
+        throw new PluginMcpError({ code: "MCP_NAME_CONFLICT", serviceName: name });
+      result[name] = server.config;
+    }
+    return result;
+  }
+
   async invoke(pluginId: string, method: string, input: unknown): Promise<unknown> {
     const loaded = this.plugins.get(pluginId);
     if (!loaded) throw new Error(`Plugin is not available: ${pluginId}`);
@@ -644,6 +672,7 @@ export class PluginRuntime {
         clientBundle: bundles.clientBundle ?? "",
         requirements: manifest.requirements,
         methods: new Set(),
+        mcpServer: null,
         hooks: { events: [], before: [] },
         providers: [],
         usageSources: [],
@@ -772,6 +801,7 @@ export class PluginRuntime {
       clientBundle,
       requirements,
       methods: new Set(ready.methods),
+      mcpServer: ready.mcpServer ?? null,
       hooks: ready.hooks ?? { events: [], before: [] },
       providers: ready.providers ?? [],
       usageSources: ready.usageSources ?? [],
@@ -851,6 +881,13 @@ export class PluginRuntime {
   }
 
   private handleChildMessage(loaded: LoadedPlugin, message: PluginProcessMessage): void {
+    if (message.type === "mcp.changed") {
+      if (this.plugins.get(loaded.id) === loaded) {
+        loaded.mcpServer = message.server;
+        this.dependencies.onMcpChanged?.(loaded.id);
+      }
+      return;
+    }
     if (message.type === "hooks.changed") {
       loaded.hooks = message.hooks;
       return;
