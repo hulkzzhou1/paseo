@@ -15,6 +15,16 @@ const management = {
   edit: "Edit",
   manual: "Manual",
   disabled: "Disabled",
+  enable: "Enable",
+  disable: "Disable",
+  delete: "Delete",
+  deleteTitle: "Delete {{name}}?",
+  deleteHint: "This removes the saved definition. Existing Agent connections are not changed.",
+  updating: "Updating MCP service…",
+  updateError: "Unable to update MCP service. Retry.",
+  deleted: "MCP service deleted",
+  serviceEnabled: "MCP service enabled",
+  serviceDisabled: "MCP service disabled",
 } as const;
 export const mcpServices = {
   en: {
@@ -27,7 +37,7 @@ export const mcpServices = {
     empty: "No MCP services registered",
     loadError: "Unable to load MCP services",
     offline: "Connect to this host to view MCP services",
-    updateHost: "Update this host to manage plugin MCP services",
+    updateHost: "Update this host to manage MCP services",
     runtimeHint:
       "New or re-established Agent runtimes receive the current configuration. Existing Agent connections are not changed.",
   },
@@ -49,6 +59,16 @@ export const mcpServices = {
     edit: "编辑",
     manual: "手动",
     disabled: "已停用",
+    enable: "启用",
+    disable: "停用",
+    delete: "删除",
+    deleteTitle: "删除 {{name}}？",
+    deleteHint: "这将移除保存的服务定义，现有 Agent 连接不受影响。",
+    updating: "正在更新 MCP 服务…",
+    updateError: "无法更新 MCP 服务，请重试。",
+    deleted: "MCP 服务已删除",
+    serviceEnabled: "MCP 服务已启用",
+    serviceDisabled: "MCP 服务已停用",
     title: "MCP 服务",
     registered: "已注册",
     unconfigured: "未配置",
@@ -57,7 +77,7 @@ export const mcpServices = {
     empty: "没有已注册的 MCP 服务",
     loadError: "无法加载 MCP 服务",
     offline: "连接此主机以查看 MCP 服务",
-    updateHost: "更新此主机以管理插件 MCP 服务",
+    updateHost: "更新此主机以管理 MCP 服务",
     runtimeHint: "新建或重新建立的 Agent 运行实例会使用当前配置。现有 Agent 连接不受影响。",
   },
   ar: {
@@ -70,7 +90,7 @@ export const mcpServices = {
     empty: "لا توجد خدمات MCP مسجّلة",
     loadError: "تعذّر تحميل خدمات MCP",
     offline: "اتصل بهذا المضيف لعرض خدمات MCP",
-    updateHost: "حدّث هذا المضيف لإدارة خدمات MCP الخاصة بالإضافات",
+    updateHost: "حدّث هذا المضيف لإدارة خدمات MCP",
     runtimeHint:
       "تتلقى مثيلات تشغيل الوكيل الجديدة أو المعاد إنشاؤها الإعدادات الحالية. لا تتغير اتصالات الوكيل القائمة.",
   },
@@ -84,7 +104,7 @@ export const mcpServices = {
     empty: "No hay servicios MCP registrados",
     loadError: "No se pudieron cargar los servicios MCP",
     offline: "Conéctate a este host para ver los servicios MCP",
-    updateHost: "Actualiza este host para gestionar servicios MCP de plugins",
+    updateHost: "Actualiza este host para gestionar servicios MCP",
     runtimeHint:
       "Los entornos de Agent nuevos o restablecidos reciben la configuración actual. Las conexiones existentes no cambian.",
   },
@@ -98,7 +118,7 @@ export const mcpServices = {
     empty: "Aucun service MCP enregistré",
     loadError: "Impossible de charger les services MCP",
     offline: "Connectez-vous à cet hôte pour voir les services MCP",
-    updateHost: "Mettez cet hôte à jour pour gérer les services MCP des plugins",
+    updateHost: "Mettez cet hôte à jour pour gérer les services MCP",
     runtimeHint:
       "Les instances Agent nouvelles ou rétablies reçoivent la configuration actuelle. Les connexions existantes ne changent pas.",
   },
@@ -112,7 +132,7 @@ export const mcpServices = {
     empty: "登録された MCP サービスはありません",
     loadError: "MCP サービスを読み込めません",
     offline: "MCP サービスを表示するにはこのホストに接続してください",
-    updateHost: "プラグイン MCP サービスを管理するにはこのホストを更新してください",
+    updateHost: "MCP サービスを管理するにはこのホストを更新してください",
     runtimeHint:
       "新規または再確立された Agent ランタイムは現在の設定を受け取ります。既存の接続は変更されません。",
   },
@@ -126,7 +146,7 @@ export const mcpServices = {
     empty: "등록된 MCP 서비스가 없습니다",
     loadError: "MCP 서비스를 불러올 수 없습니다",
     offline: "MCP 서비스를 보려면 이 호스트에 연결하세요",
-    updateHost: "플러그인 MCP 서비스를 관리하려면 이 호스트를 업데이트하세요",
+    updateHost: "MCP 서비스를 관리하려면 이 호스트를 업데이트하세요",
     runtimeHint:
       "새로 만들거나 다시 연결한 Agent 런타임은 현재 설정을 받습니다. 기존 Agent 연결은 변경되지 않습니다.",
   },
@@ -140,7 +160,7 @@ export const mcpServices = {
     empty: "Nenhum serviço MCP registrado",
     loadError: "Não foi possível carregar os serviços MCP",
     offline: "Conecte-se a este host para ver os serviços MCP",
-    updateHost: "Atualize este host para gerenciar serviços MCP de plugins",
+    updateHost: "Atualize este host para gerenciar serviços MCP",
     runtimeHint:
       "Novas instâncias do Agent ou instâncias restabelecidas recebem a configuração atual. As conexões existentes não mudam.",
   },
@@ -154,7 +174,7 @@ export const mcpServices = {
     empty: "Сервисы MCP не зарегистрированы",
     loadError: "Не удалось загрузить сервисы MCP",
     offline: "Подключитесь к этому хосту для просмотра сервисов MCP",
-    updateHost: "Обновите этот хост для управления сервисами MCP плагинов",
+    updateHost: "Обновите этот хост для управления сервисами MCP",
     runtimeHint:
       "Новые или восстановленные среды Agent получают текущую конфигурацию. Существующие подключения не меняются.",
   },
