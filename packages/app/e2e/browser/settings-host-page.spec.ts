@@ -1,4 +1,5 @@
-import { expect, test } from "../support/fixtures";
+import { expect, test, daemonTest } from "../support/fixtures";
+import { connectNewWorkspaceDaemonClient } from "../support/helpers/new-workspace";
 import { gotoAppShell, openSettings } from "../support/helpers/app";
 import { getE2EDaemonPort } from "../support/helpers/daemon-port";
 import { TEST_HOST_LABEL } from "../support/helpers/daemon-registry";
@@ -151,4 +152,29 @@ test.describe("Settings host page", () => {
     await expectHostLabelDisplayed(page);
     await expectHostActionCards(page, serverId);
   });
+});
+
+daemonTest("isolated daemon ignores the parent process password", async () => {
+  const previous = process.env.PASEO_PASSWORD;
+  process.env.PASEO_PASSWORD = "fictional-inherited-password";
+  try {
+    const daemon = await startIsolatedHostDaemon("srv_e2e_inherited_password");
+    try {
+      const client = await connectNewWorkspaceDaemonClient({
+        port: daemon.port,
+        ownProjects: false,
+      });
+      try {
+        const result = await client.getDaemonConfig();
+        expect(result.config).toBeDefined();
+      } finally {
+        await client.close();
+      }
+    } finally {
+      await daemon.close();
+    }
+  } finally {
+    if (previous === undefined) delete process.env.PASEO_PASSWORD;
+    else process.env.PASEO_PASSWORD = previous;
+  }
 });

@@ -157,6 +157,8 @@ export async function startIsolatedHostDaemon(
       cwd: serverDir,
       env: withDisabledE2ESpeechEnv({
         ...process.env,
+        // Passwords are fixture-owned; never inherit the developer daemon password.
+        PASEO_PASSWORD: undefined,
         ...options.environment,
         PASEO_HOME: paseoHome,
         PASEO_SERVER_ID: serverId,

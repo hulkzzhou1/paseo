@@ -1,3 +1,4 @@
+import { chromium } from "@playwright/test";
 import { warmMetro } from "./metro-warmup.mjs";
 export { warmMetro } from "./metro-warmup.mjs";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -166,6 +167,17 @@ export default async function globalSetup() {
   }
   const repoRoot = path.resolve(__dirname, "../../../..");
   await loadHarnessEnvironment(repoRoot);
+
+  // Fail before warming Metro when Chromium or its system libraries are unavailable.
+  try {
+    const browser = await chromium.launch({ timeout: 10_000 });
+    await browser.close();
+  } catch (error) {
+    throw new Error(
+      "Chromium preflight failed before Metro startup. Run `npx playwright install --with-deps chromium`, or configure the system library path for your environment. See the underlying launch error below.",
+      { cause: error },
+    );
+  }
 
   const metroPort = await getAvailableE2EPort();
   const metroOutput = createLineBuffer();
