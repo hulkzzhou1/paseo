@@ -428,31 +428,16 @@ The [public reference](../public-docs/plugins/reference.md#icons) owns the autho
 
 ## Register an MCP service
 
-Register one service per installation with `server.registerMcpServer({ id, label, config,
-settingsScreenId? })`. The handle's `update(config)` replaces its definition; `remove()` withdraws it.
-Use `config: null` while unconfigured. Cleanup, disable, crash, reload and removal withdraw the
-worker's definition. They do not terminate connections already owned by external providers.
+Follow the [service registration contract](../public-docs/plugins/reference.md#register-an-mcp-service)
+for the author API, transports, lifecycle and version requirements.
 
-Use stdio (`type`, `command`, `args?`, `env?`, `cwd?`) or HTTP/SSE (`type`, `url`, `headers?`).
-Relative executable paths and explicit `cwd` resolve against `server.directory`, the installation
-root. Bare executables keep PATH lookup. Arguments are not rewritten: use `server.directory` to
-construct absolute script/resource paths. A required per-service working directory currently works
-only in the Codex adapter; other providers fail explicitly instead of changing the Agent workspace.
+Plugin MCP definitions are launch-only contributions. Providers can copy launch configuration into
+persistence metadata, so the Agent manager must preserve manual MCP entries and exclude plugin
+contributions from every saved handle, including import and later persistence refreshes. Otherwise
+revoked definitions and credentials can return on resume.
 
-New and actually reconstructed Agent runtimes merge the current definitions with manual MCP
-configuration. Plugin names are installation-scoped; collisions fail rather than replacing user
-entries. Definitions and credentials are launch-only, not saved as user configuration or exposed in
-plugin list summaries. Existing running Agent sessions retain their own configuration.
-
-UI uses ordinary plugin RPC. Share business functions between RPC handlers and your MCP service,
-or call an existing MCP from your own RPC handler. Paseo adds no MCP gateway, tool directory or
-host UI MCP client. `plugin-examples/repository-mcp` demonstrates HTTP registration and shared
-fictional business logic. Providers own stdio processes; a plugin-owned HTTP service owns its own
-lifecycle. Registration does not delete a remote service.
-
-The host feature `pluginMcpServers` gates the management view. This SDK is unreleased; app, daemon
-and plugin SDK must contain this change. MCP-only catalog notifications carry `reason: "mcp"` so
-the app refreshes metadata without disposing the plugin's open settings or drafts.
+MCP-only catalog notifications carry `reason: "mcp"`. Refresh metadata without disposing the client
+installation; disposing it would destroy open settings drafts after a service configuration save.
 
 ## Lifecycle hooks
 
