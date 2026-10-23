@@ -81,6 +81,8 @@ interface LoadedPlugin {
   clientBundle: string;
   methods: ReadonlySet<string>;
   mcpServer: PluginMcpServer | null;
+  // Remains true after removal so stale worker messages cannot enter the startup path.
+  published: boolean;
   hooks: { events: string[]; before: string[] };
   providers: readonly PluginProviderMetadata[];
   usageSources: readonly PluginUsageSourceMetadata[];
@@ -350,6 +352,7 @@ export class PluginRuntime {
       throw new Error(`Plugin start cancelled: ${pluginId}`);
     }
     this.plugins.set(pluginId, loaded);
+    loaded.published = true;
     this.appendLog(pluginId, "stdout", "[paseo] Plugin ready");
   }
 
@@ -373,6 +376,7 @@ export class PluginRuntime {
       clientBundle: bundles.clientBundle ?? "",
     });
     this.plugins.set(input.id, loaded);
+    loaded.published = true;
     this.appendLog(input.id, "stdout", "[paseo] Plugin ready");
   }
 
@@ -673,6 +677,7 @@ export class PluginRuntime {
         requirements: manifest.requirements,
         methods: new Set(),
         mcpServer: null,
+        published: false,
         hooks: { events: [], before: [] },
         providers: [],
         usageSources: [],
@@ -722,6 +727,7 @@ export class PluginRuntime {
         throw error;
       });
     let loaded: LoadedPlugin | null = null;
+    let startupMcpServer: PluginMcpServer | null = null;
     let ready: Extract<PluginProcessMessage, { type: "ready" }>;
     try {
       ready = await new Promise<Extract<PluginProcessMessage, { type: "ready" }>>(
@@ -763,7 +769,10 @@ export class PluginRuntime {
               if (settled) return;
               settled = true;
               clearTimeout(timeout);
+              startupMcpServer = message.mcpServer ?? null;
               resolve(message);
+            } else if (message.type === "mcp.changed" && !loaded) {
+              startupMcpServer = message.server;
             } else if (message.type === "fatal") {
               fail(new Error(message.error));
             } else if (loaded) {
@@ -801,7 +810,8 @@ export class PluginRuntime {
       clientBundle,
       requirements,
       methods: new Set(ready.methods),
-      mcpServer: ready.mcpServer ?? null,
+      mcpServer: startupMcpServer,
+      published: false,
       hooks: ready.hooks ?? { events: [], before: [] },
       providers: ready.providers ?? [],
       usageSources: ready.usageSources ?? [],
@@ -882,9 +892,9 @@ export class PluginRuntime {
 
   private handleChildMessage(loaded: LoadedPlugin, message: PluginProcessMessage): void {
     if (message.type === "mcp.changed") {
-      if (this.plugins.get(loaded.id) === loaded) {
+      if (!loaded.published || this.plugins.get(loaded.id) === loaded) {
         loaded.mcpServer = message.server;
-        this.dependencies.onMcpChanged?.(loaded.id);
+        if (loaded.published) this.dependencies.onMcpChanged?.(loaded.id);
       }
       return;
     }

@@ -117,7 +117,7 @@ function McpServices({
         </Button>
       </Alert>
     );
-  if (services.isPending || services.isFetching) return <Alert title={t("mcp.loading")} />;
+  if (services.isPending) return <Alert title={t("mcp.loading")} />;
   const plugins = services.data?.plugins.filter((plugin) => plugin.mcpServer) ?? [];
   return (
     <SettingsSection title={hostLabel} info={t("mcp.runtimeHint")} testID="mcp-services-section">

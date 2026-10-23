@@ -8,7 +8,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import type { TestInfo } from "@playwright/test";
+import type { TestInfo, WebSocketRoute } from "@playwright/test";
 import { buildOpenProjectRoute } from "@/utils/host-routes";
 import { expect, test as base, type Page } from "../support/fixtures";
 import { gotoAppShell, openSettings } from "../support/helpers/app";
@@ -939,6 +939,59 @@ test("MCP services asks an older host to update", async ({ page }) => {
 
 test.describe("MCP services compact", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+  test("keeps loaded service rows focused during a same-host background refresh", async ({
+    page,
+    pluginEnvironment,
+  }) => {
+    const example = await copyPluginExample("repository-mcp");
+    const { client } = pluginEnvironment;
+    let hold = false;
+    const held: { send(message: string): void; message: string }[] = [];
+    function intercept(browser: WebSocketRoute) {
+      const server = browser.connectToServer();
+      browser.onMessage((message) => server.send(message));
+      server.onMessage((message) => {
+        if (
+          hold &&
+          typeof message === "string" &&
+          JSON.parse(message).message?.type === "plugin.list.response"
+        )
+          held.push({ send: browser.send.bind(browser), message });
+        else browser.send(message);
+      });
+    }
+    await page.routeWebSocket(`**:${getE2EDaemonPort()}/ws`, intercept);
+    try {
+      await client.patchDaemonConfig({ pluginsEnabled: true });
+      await client.installDirectoryPlugin(example.directory);
+      await gotoAppShell(page);
+      await page.getByRole("button", { name: "Open menu", exact: true }).first().tap();
+      await page.getByTestId("sidebar-mcp").tap();
+      const service = page.getByTestId("mcp-service-repository-mcp");
+      const configure = service.getByRole("button", { name: "Configure", exact: true });
+      await expect(service).toContainText("Not configured");
+      await configure.focus();
+      await expect(configure).toBeFocused();
+      hold = true;
+      await client.invokePluginRpc("repository-mcp", "settings.connection.write", {
+        revision: "missing",
+        values: { url: "http://127.0.0.1:9/mcp" },
+      });
+      await expect.poll(() => held.length).toBeGreaterThan(0);
+      await expect(configure).toBeFocused();
+      await expect(service).toContainText("Not configured");
+      hold = false;
+      for (const reply of held.splice(0)) reply.send(reply.message);
+      await expect(service).toContainText("Registered");
+      await expect(configure).toBeFocused();
+    } finally {
+      hold = false;
+      for (const reply of held.splice(0)) reply.send(reply.message);
+      await client.removePlugin("repository-mcp");
+      await example.cleanup();
+    }
+  });
+
   test("supports touch, keyboard focus and ordinary RPC without horizontal overflow", async ({
     page,
     pluginEnvironment,
