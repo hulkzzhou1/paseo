@@ -96,6 +96,12 @@ export function openMcpServiceForm(service?: ManagedMcpService) {
       listeners.clear();
     },
     setField<K extends keyof FormFields>(field: K, value: FormFields[K]) {
+      if (field === "type" && value !== fields.type) {
+        fields =
+          value === "stdio"
+            ? { ...fields, url: "", headers: "" }
+            : { ...fields, command: "", args: "", env: "" };
+      }
       fields = { ...fields, [field]: value };
       publish();
     },

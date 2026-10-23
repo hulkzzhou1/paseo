@@ -37,3 +37,19 @@ it("keeps malformed drafts, rejects unknown fields and can switch before enterin
   model.setField("name", "Events");
   expect(model.getSubmission()?.config).toEqual({ type: "sse", url: "https://example.invalid" });
 });
+
+it("drops fields from the previous transport when changing form transport", () => {
+  const model = openMcpServiceForm({
+    name: "Tools",
+    enabled: true,
+    config: { type: "stdio", command: "fictional", env: { TOKEN: "fictional" } },
+  });
+  model.setField("type", "http");
+  model.setField("url", "https://example.invalid");
+  model.setField("headers", '{"Authorization":"fictional"}');
+  model.setField("type", "stdio");
+  expect(model.getState().env).toBe("");
+  model.setField("command", "next");
+  model.setMode("json");
+  expect(JSON.parse(model.getState().json)).toEqual({ type: "stdio", command: "next" });
+});
