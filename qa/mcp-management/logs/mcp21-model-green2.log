@@ -1,0 +1,9 @@
+
+ RUN  v4.1.7 /data/home/hulkzzhou/workspaces/paseo-mcp-ticket21/packages/app
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  04:35:35
+   Duration  851ms (transform 393ms, setup 52ms, import 639ms, tests 13ms, environment 0ms)
+

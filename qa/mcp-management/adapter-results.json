@@ -1,0 +1,80 @@
+[
+  {
+    "provider": "codex",
+    "command": [
+      "npx",
+      "vitest",
+      "run",
+      "src/server/agent/providers/codex-app-server-agent.test.ts",
+      "--bail=1",
+      "-t",
+      "forwards a registered stdio|preapproves only granted tools"
+    ],
+    "exit": 0
+  },
+  {
+    "provider": "claude",
+    "command": [
+      "npx",
+      "vitest",
+      "run",
+      "src/server/agent/providers/claude/agent.test.ts",
+      "--bail=1",
+      "-t",
+      "preapproves only granted Hub MCP"
+    ],
+    "exit": 0
+  },
+  {
+    "provider": "opencode",
+    "command": [
+      "npx",
+      "vitest",
+      "run",
+      "src/server/agent/providers/opencode-agent.test.ts",
+      "--bail=1",
+      "-t",
+      "dynamically adds injected MCP|reports MCP add failure"
+    ],
+    "exit": 0
+  },
+  {
+    "provider": "acp",
+    "command": [
+      "npx",
+      "vitest",
+      "run",
+      "src/server/agent/providers/acp-agent.test.ts",
+      "--bail=1",
+      "-t",
+      "drops MCP servers|ACP session/load invariant"
+    ],
+    "exit": 0
+  },
+  {
+    "provider": "pi",
+    "command": [
+      "npx",
+      "vitest",
+      "run",
+      "src/server/agent/providers/pi/agent.test.ts",
+      "--bail=1",
+      "-t",
+      "injects MCP servers|registers MCP servers|registers the resumed session|does not pass MCP config"
+    ],
+    "exit": 0
+  },
+  {
+    "provider": "omp",
+    "command": [
+      "npx",
+      "vitest",
+      "run",
+      "src/server/agent/providers/omp/mcp-bridge.test.ts",
+      "--bail=1",
+      "-t",
+      "calls a real legacy SSE|registers a stdio MCP|passes runtime and launch env"
+    ],
+    "exit": 0
+  }
+]

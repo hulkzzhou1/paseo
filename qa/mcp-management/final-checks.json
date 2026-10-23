@@ -1,0 +1,54 @@
+[
+  {
+    "revision": "ce4578325e0a7a31d7795fbeb16963c13faed858",
+    "command": [
+      "npm",
+      "run",
+      "build:server"
+    ],
+    "log": "final-build.log",
+    "exit": 0
+  },
+  {
+    "revision": "ce4578325e0a7a31d7795fbeb16963c13faed858",
+    "command": [
+      "npm",
+      "run",
+      "typecheck"
+    ],
+    "log": "final-typecheck.log",
+    "exit": 0
+  },
+  {
+    "revision": "ce4578325e0a7a31d7795fbeb16963c13faed858",
+    "command": [
+      "npm",
+      "run",
+      "lint"
+    ],
+    "log": "final-lint.log",
+    "exit": 0
+  },
+  {
+    "revision": "ce4578325e0a7a31d7795fbeb16963c13faed858",
+    "command": [
+      "npm",
+      "run",
+      "format:check"
+    ],
+    "log": "final-format-check.log",
+    "exit": 0
+  },
+  {
+    "revision": "ce4578325e0a7a31d7795fbeb16963c13faed858",
+    "command": [
+      "npx",
+      "vitest",
+      "run",
+      "packages/website/src/content-translations.test.ts",
+      "--bail=1"
+    ],
+    "log": "final-translations.log",
+    "exit": 0
+  }
+]

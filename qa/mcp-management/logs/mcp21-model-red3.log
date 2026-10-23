@@ -1,0 +1,32 @@
+
+ RUN  v4.1.7 /data/home/hulkzzhou/workspaces/paseo-mcp-ticket21/packages/app
+
+ ❯ |unit| src/screens/settings/mcp-service-form-model.test.ts (3 tests | 1 failed) 20ms
+   × drops fields from the previous transport when changing form transport 6ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |unit| src/screens/settings/mcp-service-form-model.test.ts > drops fields from the previous transport when changing form transport
+AssertionError: expected '{"TOKEN":"fictional"}' to be '' // Object.is equality
+
+- Expected
++ Received
+
++ {"TOKEN":"fictional"}
+
+ ❯ src/screens/settings/mcp-service-form-model.test.ts:47:32
+     45|   model.setField("headers", '{"Authorization":"fictional"}');
+     46|   model.setField("type", "stdio");
+     47|   expect(model.getState().env).toBe("");
+       |                                ^
+     48|   model.setField("command", "next");
+     49|   model.setMode("json");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 2 passed (3)
+   Start at  04:38:03
+   Duration  789ms (transform 315ms, setup 56ms, import 562ms, tests 20ms, environment 1ms)
+

@@ -1,0 +1,46 @@
+
+ RUN  v4.1.7 /data/home/hulkzzhou/workspaces/paseo-mcp-ticket17/packages/app
+
+ ❯ |unit| src/sidebar-nav/model.test.ts (20 tests | 1 failed) 15ms
+     × ignores retired MCP preferences while preserving other order and visibility 11ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |unit| src/sidebar-nav/model.test.ts > resolveSidebarNavItems > ignores retired MCP preferences while preserving other order and visibility
+AssertionError: expected [ …(5) ] to deeply equal [ …(4) ]
+
+- Expected
++ Received
+
+@@ -2,10 +2,14 @@
+    {
+      "key": "search",
+      "visible": false,
+    },
+    {
++     "key": "mcp",
++     "visible": true,
++   },
++   {
+      "key": "history",
+      "visible": true,
+    },
+    {
+      "key": "new-workspace",
+
+ ❯ src/sidebar-nav/model.test.ts:38:30
+     36|       { key: "search", visible: false }, { key: "mcp", visible: true }…
+     37|     ] });
+     38|     expect(summarize(items)).toEqual([
+       |                              ^
+     39|       { key: "search", visible: false }, { key: "history", visible: tr…
+     40|       { key: "new-workspace", visible: true }, { key: "schedules", vis…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (20)
+   Start at  04:11:58
+   Duration  276ms (transform 65ms, setup 52ms, import 33ms, tests 15ms, environment 0ms)
+

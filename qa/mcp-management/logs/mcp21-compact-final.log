@@ -1,0 +1,72 @@
+
+> @getpaseo/app@0.13.0-beta.1 test:e2e
+> playwright test --project=browser e2e/browser/plugin-management.spec.ts --grep manual MCP JSON compact --workers=1
+
+[metro] Skipping web setup: EXPO_NO_WEB_SETUP is enabled.
+[metro] Using src/app as the root directory for Expo Router.
+[metro] Waiting on http://localhost:35327
+[metro] Logs for your project will appear below.
+[metro] | (node:2566186) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[metro] | (Use `node --trace-warnings ...` to show where the warning was created)
+[metro] Web Bundled 4721ms packages/app/index.ts (5697 modules)
+[e2e] Metro warmed on port 35327
+
+Running 1 test using 1 worker
+
+(node:2567221) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2567221) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[e2e] Worker 0 daemon started on port 39677, home: /tmp/paseo-e2e-worker-0-qbE37V
+[metro] Web Bundled 355ms packages/app/index.ts (1 module)
+[metro] Web  INFO  %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[metro] Web  LOG  Running application "main" with appParams:
+[metro]  {"hydrate": undefined, "rootTag": "#root"} 
+[metro] Development-level warnings: ON.
+[metro] Performance optimizations: OFF.
+[metro] Web  WARN  Require cycle: src/stores/workspace-layout-store.ts -> src/plugins/workspace-panels/locations.ts -> src/plugins/registry.ts -> src/plugins/client-runtime.ts -> src/runtime/host-runtime.ts -> src/desktop/browser/automation/handler.ts -> src/stores/workspace-layout-store.ts
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  Require cycle: src/runtime/host-runtime.ts -> src/runtime/directory-sync/index.ts -> src/runtime/directory-sync/agent-replica.ts -> src/hooks/use-archive-agent.ts -> src/runtime/host-runtime.ts
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  Require cycle: src/plugins/workspace-panels/locations.ts -> src/plugins/registry.ts -> src/plugins/client-runtime.ts -> src/plugins/actions.ts -> src/plugins/workspace-panels/locations.ts
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  Require cycle: src/stores/navigation-active-workspace-store/index.ts -> src/stores/workspace-layout-store.ts -> src/plugins/workspace-panels/locations.ts -> src/plugins/registry.ts -> src/plugins/client-runtime.ts -> src/plugins/navigation.ts -> src/stores/navigation-active-workspace-store/index.ts
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  Require cycle: src/stores/workspace-layout-store.ts -> src/plugins/workspace-panels/locations.ts -> src/plugins/registry.ts -> src/plugins/client-runtime.ts -> src/plugins/navigation.ts -> src/stores/workspace-layout-store.ts
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  Require cycle: src/plugins/registry.ts -> src/plugins/evaluate.ts -> src/plugins/themes/index.ts -> src/plugins/registry.ts
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  Require cycle: src/components/sidebar-workspace-list.tsx -> src/components/sidebar/sidebar-status-list.tsx -> src/components/sidebar/sidebar-workspace-row-content.tsx -> src/components/workspace-hover-card.tsx -> src/components/sidebar-workspace-list.tsx
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  Require cycle: src/panels/register-panels.ts -> src/panels/agent-panel.tsx -> src/panels/agent-tracks.tsx -> src/subagents/track.tsx -> src/screens/workspace/workspace-tab-presentation.tsx -> src/panels/register-panels.ts
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  Require cycle: src/panels/register-panels.ts -> src/panels/new-tab-panel.tsx -> src/workspace-tabs/launcher/index.tsx -> src/panels/register-panels.ts
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  props.pointerEvents is deprecated. Use style.pointerEvents
+[metro] Web Bundled 67ms packages/app/src/attachments/web/indexeddb-attachment-store.ts (1 module)
+[metro] Web  ERROR  
+[metro] Code: sidebar-close-button.tsx
+[metro] [0m [90m 49 |[39m         accessibilityState[33m=[39m{accessibilityState}
+[metro]  [90m 50 |[39m       [33m>[39m
+[metro] [31m[1m>[22m[39m[90m 51 |[39m         [33m<[39m[33mThemedX[39m
+[metro]  [90m    |[39m         [31m[1m^[22m[39m
+[metro]  [90m 52 |[39m           size[33m=[39m{iconButtonChromeGlyphSize([32m"large"[39m)}
+[metro]  [90m 53 |[39m           strokeWidth[33m=[39m{[35m1.5[39m}
+[metro]  [90m 54 |[39m           uniProps[33m=[39m{mutedIconColorMapping}[0m
+[metro] Call Stack
+[metro]   SidebarCloseButton (packages/app/src/components/headers/sidebar-close-button.tsx:51:9)
+[metro]   useMemo$argument_0 (packages/app/src/components/left-sidebar.tsx:550:7)
+[metro]   LeftSidebar (packages/app/src/components/left-sidebar.tsx:248:11)
+[metro]   SidebarChrome (packages/app/src/app/_layout.tsx:548:8)
+[metro]   AppContainer (packages/app/src/app/_layout.tsx:429:5)
+[metro]   AppWithSidebar (packages/app/src/app/_layout.tsx:775:10)
+[metro]   AppShell (packages/app/src/app/_layout.tsx:836:9)
+[metro]   RootAppTree (packages/app/src/app/_layout.tsx:892:15)
+[metro]   RootLayout (packages/app/src/app/_layout.tsx:912:10)
+[metro]   RootRouter (packages/app/src/root-app.tsx:35:15)
+[metro]   RootApp (packages/app/src/root-app.tsx:19:7)
+  ✓  1 [browser] › e2e/browser/plugin-management.spec.ts:1534:3 › manual MCP JSON compact › edits JSON with touch and keyboard without overflow (8.1s)
+[e2e] Worker 0 daemon stopped
+[e2e] Metro stopped
+
+  1 passed (33.6s)

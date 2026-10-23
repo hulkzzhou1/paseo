@@ -1,0 +1,100 @@
+
+> @getpaseo/app@0.13.0-beta.1 test:e2e
+> playwright test --project=browser e2e/browser/plugin-management.spec.ts --grep manual MCP JSON --workers=1
+
+[metro] Skipping web setup: EXPO_NO_WEB_SETUP is enabled.
+[metro] Using src/app as the root directory for Expo Router.
+[metro] Waiting on http://localhost:43947
+[metro] Logs for your project will appear below.
+[metro] Web Bundled 3918ms packages/app/index.ts (5697 modules)
+[e2e] Metro warmed on port 43947
+
+Running 2 tests using 1 worker
+
+(node:2580633) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2580633) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[e2e] Worker 0 daemon started on port 42767, home: /tmp/paseo-e2e-worker-0-4Xp9C3
+[e2e] Worker 0 daemon stopped
+  ✘  1 [browser] › e2e/browser/plugin-management.spec.ts:1444:1 › manual MCP JSON editing retains drafts and round trips all transports (17ms)
+(node:2580965) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2580965) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[e2e] Worker 1 daemon started on port 34523, home: /tmp/paseo-e2e-worker-1-HDse3n
+[e2e] Worker 1 daemon stopped
+  ✘  2 [browser] › e2e/browser/plugin-management.spec.ts:1534:3 › manual MCP JSON compact › edits JSON with touch and keyboard without overflow (16ms)
+[e2e] Metro stopped
+
+
+  1) [browser] › e2e/browser/plugin-management.spec.ts:1444:1 › manual MCP JSON editing retains drafts and round trips all transports 
+
+    Error: browserType.launch: Target page, context or browser has been closed
+    Browser logs:
+
+    <launching> /data/home/hulkzzhou/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=/tmp/playwright_chromiumdev_profile-4HhaNC --remote-debugging-pipe --no-startup-window
+    <launched> pid=2580960
+    [pid=2580960][err] /data/home/hulkzzhou/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell: error while loading shared libraries: libgbm.so.1: cannot open shared object file: No such file or directory
+    Call log:
+    [2m  - <launching> /data/home/hulkzzhou/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=/tmp/playwright_chromiumdev_profile-4HhaNC --remote-debugging-pipe --no-startup-window[22m
+    [2m  - <launched> pid=2580960[22m
+    [2m  - [pid=2580960][err] /data/home/hulkzzhou/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell: error while loading shared libraries: libgbm.so.1: cannot open shared object file: No such file or directory[22m
+    [2m  - [pid=2580960] <gracefully close start>[22m
+    [2m  - [pid=2580960] <kill>[22m
+    [2m  - [pid=2580960] <will force kill>[22m
+    [2m  - [pid=2580960] exception while trying to kill process: Error: kill ESRCH[22m
+    [2m  - [pid=2580960] <process did exit: exitCode=127, signal=null>[22m
+    [2m  - [pid=2580960] starting temporary directories cleanup[22m
+    [2m  - [pid=2580960] finished temporary directories cleanup[22m
+    [2m  - [pid=2580960] <gracefully close end>[22m
+
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/plugin-management-manual-M-dea20--round-trips-all-transports-browser/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/plugin-management-manual-M-dea20--round-trips-all-transports-browser/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [browser] › e2e/browser/plugin-management.spec.ts:1534:3 › manual MCP JSON compact › edits JSON with touch and keyboard without overflow 
+
+    Error: browserType.launch: Target page, context or browser has been closed
+    Browser logs:
+
+    <launching> /data/home/hulkzzhou/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=/tmp/playwright_chromiumdev_profile-hNRHWt --remote-debugging-pipe --no-startup-window
+    <launched> pid=2581269
+    [pid=2581269][err] /data/home/hulkzzhou/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell: error while loading shared libraries: libgbm.so.1: cannot open shared object file: No such file or directory
+    Call log:
+    [2m  - <launching> /data/home/hulkzzhou/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=/tmp/playwright_chromiumdev_profile-hNRHWt --remote-debugging-pipe --no-startup-window[22m
+    [2m  - <launched> pid=2581269[22m
+    [2m  - [pid=2581269][err] /data/home/hulkzzhou/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell: error while loading shared libraries: libgbm.so.1: cannot open shared object file: No such file or directory[22m
+    [2m  - [pid=2581269] <gracefully close start>[22m
+    [2m  - [pid=2581269] <kill>[22m
+    [2m  - [pid=2581269] <will force kill>[22m
+    [2m  - [pid=2581269] exception while trying to kill process: Error: kill ESRCH[22m
+    [2m  - [pid=2581269] <process did exit: exitCode=127, signal=null>[22m
+    [2m  - [pid=2581269] starting temporary directories cleanup[22m
+    [2m  - [pid=2581269] finished temporary directories cleanup[22m
+    [2m  - [pid=2581269] <gracefully close end>[22m
+
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/plugin-management-manual-M-ac7f2-d-keyboard-without-overflow-browser/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/plugin-management-manual-M-ac7f2-d-keyboard-without-overflow-browser/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    [browser] › e2e/browser/plugin-management.spec.ts:1444:1 › manual MCP JSON editing retains drafts and round trips all transports 
+    [browser] › e2e/browser/plugin-management.spec.ts:1534:3 › manual MCP JSON compact › edits JSON with touch and keyboard without overflow 
+npm error Lifecycle script `test:e2e` failed with error:
+npm error code 1
+npm error path /data/home/hulkzzhou/workspaces/paseo-mcp-management-fixes/packages/app
+npm error workspace @getpaseo/app@0.13.0-beta.1
+npm error location /data/home/hulkzzhou/workspaces/paseo-mcp-management-fixes/packages/app
+npm error command failed
+npm error command sh -c playwright test --project=browser e2e/browser/plugin-management.spec.ts --grep 'manual MCP JSON' --workers=1

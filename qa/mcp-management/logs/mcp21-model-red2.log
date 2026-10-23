@@ -1,0 +1,30 @@
+
+ RUN  v4.1.7 /data/home/hulkzzhou/workspaces/paseo-mcp-ticket21/packages/app
+
+ ❯ |unit| src/screens/settings/mcp-service-form-model.test.ts (2 tests | 1 failed) 16ms
+   × keeps malformed drafts, rejects unknown fields and can switch before entering a name 8ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |unit| src/screens/settings/mcp-service-form-model.test.ts > keeps malformed drafts, rejects unknown fields and can switch before entering a name
+AssertionError: expected 'json' to be 'form' // Object.is equality
+
+Expected: "form"
+Received: "json"
+
+ ❯ src/screens/settings/mcp-service-form-model.test.ts:20:33
+     18|   model.setField("args", "broken-array");
+     19|   model.setMode("json");
+     20|   expect(model.getState().mode).toBe("form");
+       |                                 ^
+     21|   expect(model.getState().args).toBe("broken-array");
+     22|   model.setField("args", '["--safe"]');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  04:35:09
+   Duration  780ms (transform 308ms, setup 52ms, import 568ms, tests 16ms, environment 0ms)
+

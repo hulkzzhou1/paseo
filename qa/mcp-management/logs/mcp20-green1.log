@@ -1,0 +1,11 @@
+
+ RUN  v4.1.6 /data/home/hulkzzhou/workspaces/paseo-mcp-ticket20/packages/server
+
+Sourcemap for "/data/home/hulkzzhou/workspaces/paseo-mcp-ticket20/packages/protocol/dist/generated/validation/ws-outbound.aot.js" points to missing source files
+Sourcemap for "/data/home/hulkzzhou/workspaces/paseo-mcp-ticket20/packages/protocol/dist/generated/validation/ws-outbound-schema-metadata.js" points to missing source files
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 194 skipped (195)
+   Start at  04:30:57
+   Duration  12.21s (transform 9.04s, setup 47ms, import 9.86s, tests 2.15s, environment 0ms)
+

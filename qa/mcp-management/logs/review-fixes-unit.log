@@ -1,0 +1,9 @@
+
+ RUN  v4.1.7 /data/home/hulkzzhou/workspaces/paseo-mcp-management-fixes
+
+
+ Test Files  2 passed (2)
+      Tests  52 passed (52)
+   Start at  04:44:00
+   Duration  1.88s (transform 1.05s, setup 0ms, import 1.64s, tests 909ms, environment 0ms)
+

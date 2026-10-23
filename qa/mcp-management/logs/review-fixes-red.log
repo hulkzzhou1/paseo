@@ -1,0 +1,33 @@
+
+ RUN  v4.1.7 /data/home/hulkzzhou/workspaces/paseo-mcp-management-fixes
+
+ ❯ packages/app/src/screens/settings/mcp-service-form-model.test.ts (12 tests | 1 failed) 21ms
+   × preserves alwaysLoad=undefined when editing stdio and switching modes 6ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/app/src/screens/settings/mcp-service-form-model.test.ts > preserves alwaysLoad=undefined when editing stdio and switching modes
+AssertionError: expected undefined to be true // Object.is equality
+
+- Expected:
+true
+
++ Received:
+undefined
+
+ ❯ packages/app/src/screens/settings/mcp-service-form-model.test.ts:75:54
+     73|     model.setField("json", JSON.stringify({ ...connection, alwaysLoad:…
+     74|     model.setMode("form");
+     75|     expect(model.getSubmission()?.config.alwaysLoad).toBe(!alwaysLoad);
+       |                                                      ^
+     76|   });
+     77| }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 3 passed (12)
+   Start at  04:43:16
+   Duration  760ms (transform 301ms, setup 0ms, import 593ms, tests 21ms, environment 0ms)
+

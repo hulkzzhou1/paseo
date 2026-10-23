@@ -1,0 +1,9 @@
+
+ RUN  v4.1.6 /data/home/hulkzzhou/workspaces/paseo-mcp-management-integration/packages/server
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed | 179 skipped (181)
+   Start at  04:28:55
+   Duration  3.34s (transform 2.03s, setup 57ms, import 3.11s, tests 21ms, environment 0ms)
+

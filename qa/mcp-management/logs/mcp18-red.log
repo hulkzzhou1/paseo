@@ -1,0 +1,52 @@
+
+ RUN  v4.1.6 /data/home/hulkzzhou/workspaces/paseo-mcp-ticket18/packages/server
+
+stdout | src/server/plugins/mcp-services.e2e.test.ts
+[dotenv@17.3.1] injecting env (0) from .env.test -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.3.1] injecting env (0) from ../.env -- tip: 🛡️ auth for agents: https://vestauth.com
+
+ ❯ src/server/plugins/mcp-services.e2e.test.ts (3 tests | 1 failed | 2 skipped) 246ms
+   × manual MCP saves replace individual definitions and distribute only to new Agent runtimes 241ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/server/plugins/mcp-services.e2e.test.ts > manual MCP saves replace individual definitions and distribute only to new Agent runtimes
+AssertionError: expected undefined to deeply equal { first: { name: 'repository', …(2) } }
+
+- Expected:
+{
+  "first": {
+    "config": {
+      "args": [
+        "--flag",
+      ],
+      "command": "nonexistent-mcp-test-command",
+      "env": {
+        "TOKEN": "fictional-secret",
+      },
+      "type": "stdio",
+    },
+    "enabled": true,
+    "name": "repository",
+  },
+}
+
++ Received:
+undefined
+
+ ❯ src/server/plugins/mcp-services.e2e.test.ts:311:64
+    309|     const first = { name: "repository", enabled: true, config: { type:…
+    310|     await client.patchDaemonConfig({ mcpServers: { first } });
+    311|     expect((await client.getDaemonConfig()).config.mcpServers).toEqual…
+       |                                                                ^
+    312|     expect(launches).toEqual([]);
+    313|     await client.fetchAgents({ subscribe: {} });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 2 skipped (3)
+   Start at  04:12:40
+   Duration  12.72s (transform 9.55s, setup 49ms, import 12.27s, tests 246ms, environment 0ms)
+

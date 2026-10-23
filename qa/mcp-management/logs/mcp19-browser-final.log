@@ -1,0 +1,72 @@
+
+> @getpaseo/app@0.13.0-beta.1 test:e2e
+> playwright test --project=browser e2e/browser/plugin-management.spec.ts --grep manual MCP lifecycle --workers=1
+
+[metro] Skipping web setup: EXPO_NO_WEB_SETUP is enabled.
+[metro] Using src/app as the root directory for Expo Router.
+[metro] Waiting on http://localhost:38177
+[metro] Logs for your project will appear below.
+[metro] Web Bundled 3951ms packages/app/index.ts (5695 modules)
+[e2e] Metro warmed on port 38177
+
+Running 1 test using 1 worker
+
+(node:2549396) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2549396) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[e2e] Worker 0 daemon started on port 46791, home: /tmp/paseo-e2e-worker-0-7F0An3
+[metro] Web Bundled 342ms packages/app/index.ts (1 module)
+[metro] Web  INFO  %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[metro] Web  LOG  Running application "main" with appParams:
+[metro]  {"hydrate": undefined, "rootTag": "#root"} 
+[metro] Development-level warnings: ON.
+[metro] Performance optimizations: OFF.
+[metro] Web  WARN  Require cycle: src/stores/workspace-layout-store.ts -> src/plugins/workspace-panels/locations.ts -> src/plugins/registry.ts -> src/plugins/client-runtime.ts -> src/runtime/host-runtime.ts -> src/desktop/browser/automation/handler.ts -> src/stores/workspace-layout-store.ts
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  Require cycle: src/runtime/host-runtime.ts -> src/runtime/directory-sync/index.ts -> src/runtime/directory-sync/agent-replica.ts -> src/hooks/use-archive-agent.ts -> src/runtime/host-runtime.ts
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  Require cycle: src/plugins/workspace-panels/locations.ts -> src/plugins/registry.ts -> src/plugins/client-runtime.ts -> src/plugins/actions.ts -> src/plugins/workspace-panels/locations.ts
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  Require cycle: src/stores/navigation-active-workspace-store/index.ts -> src/stores/workspace-layout-store.ts -> src/plugins/workspace-panels/locations.ts -> src/plugins/registry.ts -> src/plugins/client-runtime.ts -> src/plugins/navigation.ts -> src/stores/navigation-active-workspace-store/index.ts
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  Require cycle: src/stores/workspace-layout-store.ts -> src/plugins/workspace-panels/locations.ts -> src/plugins/registry.ts -> src/plugins/client-runtime.ts -> src/plugins/navigation.ts -> src/stores/workspace-layout-store.ts
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  Require cycle: src/plugins/registry.ts -> src/plugins/evaluate.ts -> src/plugins/themes/index.ts -> src/plugins/registry.ts
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  Require cycle: src/components/sidebar-workspace-list.tsx -> src/components/sidebar/sidebar-status-list.tsx -> src/components/sidebar/sidebar-workspace-row-content.tsx -> src/components/workspace-hover-card.tsx -> src/components/sidebar-workspace-list.tsx
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  Require cycle: src/panels/register-panels.ts -> src/panels/agent-panel.tsx -> src/panels/agent-tracks.tsx -> src/subagents/track.tsx -> src/screens/workspace/workspace-tab-presentation.tsx -> src/panels/register-panels.ts
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  Require cycle: src/panels/register-panels.ts -> src/panels/new-tab-panel.tsx -> src/workspace-tabs/launcher/index.tsx -> src/panels/register-panels.ts
+[metro] Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+[metro] Web  WARN  props.pointerEvents is deprecated. Use style.pointerEvents
+[metro] Web Bundled 69ms packages/app/src/attachments/web/indexeddb-attachment-store.ts (1 module)
+[metro] Web  WARN  Animated: `useNativeDriver` is not supported because the native animated module is missing. Falling back to JS-based animation. To resolve this, add `RCTAnimation` module to this app, or remove `useNativeDriver`. Make sure to run `bundle exec pod install` first. Read more about autolinking: https://github.com/react-native-community/cli/blob/master/docs/autolinking.md
+[metro] Web  ERROR  
+[metro] Code: sidebar-menu-toggle.tsx
+[metro] [0m [90m 84 |[39m       accessibilityState[33m=[39m{accessibilityState}
+[metro]  [90m 85 |[39m     [33m>[39m
+[metro] [31m[1m>[22m[39m[90m 86 |[39m       {isMobile [33m?[39m (
+[metro]  [90m    |[39m        [31m[1m^[22m[39m
+[metro]  [90m 87 |[39m         [33m<[39m[33mMobileMenuIcon[39m extraMuted[33m=[39m{extraMutedIdleIcon} [33m/[39m[33m>[39m
+[metro]  [90m 88 |[39m       ) [33m:[39m (
+[metro]  [90m 89 |[39m         [33m<[39m[33mThemedPanelLeft[39m[0m
+[metro] Call Stack
+[metro]   SidebarMenuToggleButton (packages/app/src/components/headers/sidebar-menu-toggle.tsx:86:8)
+[metro]   SidebarMenuToggle (packages/app/src/components/headers/sidebar-menu-toggle.tsx:121:10)
+[metro]   MenuHeader (packages/app/src/components/headers/menu-header.tsx:24:11)
+[metro]   OpenProjectScreen (packages/app/src/screens/open-project-screen.tsx:64:7)
+[metro]   OpenProjectRoute (packages/app/src/app/open-project.tsx:7:7)
+[metro]   ThemedStackBase (packages/app/src/navigation/themed-stack.tsx:64:5)
+[metro]   RootStack (packages/app/src/app/_layout.tsx:792:5)
+[metro]   AppShell (packages/app/src/app/_layout.tsx:838:11)
+[metro]   RootAppTree (packages/app/src/app/_layout.tsx:892:15)
+[metro]   RootLayout (packages/app/src/app/_layout.tsx:912:10)
+[metro]   RootRouter (packages/app/src/root-app.tsx:35:15)
+[metro]   RootApp (packages/app/src/root-app.tsx:19:7)
+  ✓  1 [browser] › e2e/browser/plugin-management.spec.ts:1338:1 › manual MCP lifecycle supports pending failure retry and keyboard delete confirmation (8.4s)
+[e2e] Worker 0 daemon stopped
+[e2e] Metro stopped
+
+  1 passed (32.7s)

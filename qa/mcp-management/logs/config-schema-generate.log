@@ -1,0 +1,5 @@
+
+> @getpaseo/server@0.13.0-beta.1 generate:config-schema
+> tsx scripts/generate-config-schema.ts
+
+Wrote /data/home/hulkzzhou/workspaces/paseo-mcp-management-integration/packages/website/public/schemas/paseo.config.v1.json

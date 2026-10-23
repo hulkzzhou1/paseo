@@ -1,0 +1,27 @@
+
+ RUN  v4.1.6 /data/home/hulkzzhou/workspaces/paseo-mcp-ticket20/packages/server
+
+Sourcemap for "/data/home/hulkzzhou/workspaces/paseo-mcp-ticket20/packages/protocol/dist/generated/validation/ws-outbound.aot.js" points to missing source files
+Sourcemap for "/data/home/hulkzzhou/workspaces/paseo-mcp-ticket20/packages/protocol/dist/generated/validation/ws-outbound-schema-metadata.js" points to missing source files
+stdout | src/server/agent/mcp-server.test.ts
+[dotenv@17.3.1] injecting env (0) from .env.test -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[dotenv@17.3.1] injecting env (0) from ../.env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+
+ ❯ src/server/agent/mcp-server.test.ts (195 tests | 1 failed | 194 skipped) 2359ms
+   × system MCP management discovers services and creates safe host-local definitions 2347ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/server/agent/mcp-server.test.ts > system MCP management discovers services and creates safe host-local definitions
+AssertionError: expected [ 'list_hosts', …(39) ] to include 'create_mcp_service'
+ ❯ src/server/agent/mcp-server.test.ts:6930:43
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 194 skipped (195)
+   Start at  04:29:12
+   Duration  12.53s (transform 9.36s, setup 47ms, import 9.96s, tests 2.36s, environment 0ms)
+

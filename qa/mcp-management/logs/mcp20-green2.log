@@ -1,0 +1,9 @@
+
+ RUN  v4.1.6 /data/home/hulkzzhou/workspaces/paseo-mcp-ticket20/packages/server
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 194 skipped (195)
+   Start at  04:32:34
+   Duration  14.14s (transform 9.52s, setup 46ms, import 10.20s, tests 3.74s, environment 0ms)
+

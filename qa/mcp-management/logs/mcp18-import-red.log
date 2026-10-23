@@ -1,0 +1,45 @@
+
+ RUN  v4.1.6 /data/home/hulkzzhou/workspaces/paseo-mcp-ticket18/packages/server
+
+stdout | src/server/agent/agent-manager.test.ts
+[dotenv@17.3.1] injecting env (0) from .env.test -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[dotenv@17.3.1] injecting env (0) from ../.env -- tip: ⚙️  enable debug logging with { debug: true }
+
+ ❯ src/server/agent/agent-manager.test.ts (214 tests | 1 failed | 213 skipped) 46ms
+   × plugin MCP definitions follow real create, resume and import without becoming saved user configuration 43ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/server/agent/agent-manager.test.ts > plugin MCP definitions follow real create, resume and import without becoming saved user configuration
+AssertionError: expected { imported_manual: { …(2) }, …(1) } to deeply equal { imported_manual: { …(2) } }
+
+- Expected
++ Received
+
+  {
+    "imported_manual": {
+      "type": "http",
+      "url": "https://manual.example/mcp",
+    },
++   "paseo_manual_removed": {
++     "type": "http",
++     "url": "https://removed.example/mcp",
++   },
+  }
+
+ ❯ src/server/agent/agent-manager.test.ts:12166:38
+    12164|     workspaceId: "fictional-workspace",
+    12165|   });
+    12166|   expect(imported.config.mcpServers).toEqual({ imported_manual: manual…
+       |                                      ^
+    12167|   expect(imported.persistence?.metadata?.mcpServers).toEqual({ importe…
+    12168|   definitions = {};
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 213 skipped (214)
+   Start at  04:16:40
+   Duration  1.85s (transform 1.08s, setup 49ms, import 1.58s, tests 46ms, environment 0ms)
+

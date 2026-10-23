@@ -1,0 +1,169 @@
+
+ RUN  v4.1.6 /data/home/hulkzzhou/workspaces/paseo-mcp-management-integration/packages/server
+
+stdout | src/server/persisted-config-json-schema.test.ts
+[dotenv@17.3.1] injecting env (0) from .env.test -- tip: ⚙️  enable debug logging with { debug: true }
+[dotenv@17.3.1] injecting env (0) from ../.env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+
+ ❯ src/server/persisted-config-json-schema.test.ts (10 tests | 1 failed) 114ms
+   × the published schema stays current with the daemon's configuration schema 27ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/server/persisted-config-json-schema.test.ts > the published schema stays current with the daemon's configuration schema
+AssertionError: Run npm run generate:config-schema --workspace=@getpaseo/server: expected { …(5) } to deeply equal { …(6) }
+
+- Expected
++ Received
+
+@@ -722,133 +722,10 @@
+            "type": "string",
+          },
+        },
+        "type": "object",
+      },
+-     "mcpServers": {
+-       "additionalProperties": {
+-         "properties": {
+-           "config": {
+-             "oneOf": [
+-               {
+-                 "properties": {
+-                   "alwaysLoad": {
+-                     "type": "boolean",
+-                   },
+-                   "args": {
+-                     "items": {
+-                       "type": "string",
+-                     },
+-                     "type": "array",
+-                   },
+-                   "command": {
+-                     "pattern": "\\S",
+-                     "type": "string",
+-                   },
+-                   "env": {
+-                     "additionalProperties": {
+-                       "type": "string",
+-                     },
+-                     "propertyNames": {
+-                       "type": "string",
+-                     },
+-                     "type": "object",
+-                   },
+-                   "type": {
+-                     "const": "stdio",
+-                     "type": "string",
+-                   },
+-                 },
+-                 "required": [
+-                   "type",
+-                   "command",
+-                 ],
+-                 "type": "object",
+-               },
+-               {
+-                 "properties": {
+-                   "alwaysLoad": {
+-                     "type": "boolean",
+-                   },
+-                   "headers": {
+-                     "additionalProperties": {
+-                       "type": "string",
+-                     },
+-                     "propertyNames": {
+-                       "type": "string",
+-                     },
+-                     "type": "object",
+-                   },
+-                   "type": {
+-                     "const": "http",
+-                     "type": "string",
+-                   },
+-                   "url": {
+-                     "pattern": "^https?:\\/\\/",
+-                     "type": "string",
+-                   },
+-                 },
+-                 "required": [
+-                   "type",
+-                   "url",
+-                 ],
+-                 "type": "object",
+-               },
+-               {
+-                 "properties": {
+-                   "alwaysLoad": {
+-                     "type": "boolean",
+-                   },
+-                   "headers": {
+-                     "additionalProperties": {
+-                       "type": "string",
+-                     },
+-                     "propertyNames": {
+-                       "type": "string",
+-                     },
+-                     "type": "object",
+-                   },
+-                   "type": {
+-                     "const": "sse",
+-                     "type": "string",
+-                   },
+-                   "url": {
+-                     "pattern": "^https?:\\/\\/",
+-                     "type": "string",
+-                   },
+-                 },
+-                 "required": [
+-                   "type",
+-                   "url",
+-                 ],
+-                 "type": "object",
+-               },
+-             ],
+-           },
+-           "enabled": {
+-             "type": "boolean",
+-           },
+-           "name": {
+-             "maxLength": 80,
+-             "minLength": 1,
+-             "pattern": "\\S",
+-             "type": "string",
+-           },
+-         },
+-         "required": [
+-           "name",
+-           "enabled",
+-           "config",
+-         ],
+-         "type": "object",
+-       },
+-       "propertyNames": {
+-         "pattern": "^[a-z][a-z0-9-]*$",
+-         "type": "string",
+-       },
+-       "type": "object",
+-     },
+      "pluginRegistries": {
+        "additionalProperties": {
+          "properties": {
+            "authorization": {
+              "minLength": 1,
+
+ ❯ src/server/persisted-config-json-schema.test.ts:47:5
+     45|     publishedSchema,
+     46|     "Run npm run generate:config-schema --workspace=@getpaseo/server",
+     47|   ).toEqual(generated);
+       |     ^
+     48| });
+     49|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (10)
+   Start at  04:36:14
+   Duration  1.07s (transform 386ms, setup 46ms, import 754ms, tests 114ms, environment 0ms)
+
