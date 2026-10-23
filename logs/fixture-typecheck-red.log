@@ -1,0 +1,76 @@
+
+> paseo@0.13.0-beta.1 typecheck
+> npm run typecheck --workspaces --if-present
+
+
+> @getpaseo/builtin-plugins@0.13.0-beta.1 typecheck
+> tsgo -p tsconfig.json --noEmit
+
+
+> @getpaseo/expo-two-way-audio@0.13.0-beta.1 typecheck
+> tsgo --noEmit
+
+
+> @getpaseo/highlight@0.13.0-beta.1 typecheck
+> tsgo --noEmit
+
+
+> @getpaseo/plugin@0.13.0-beta.1 typecheck
+> tsgo --noEmit && npm run typecheck:examples
+
+
+> @getpaseo/plugin@0.13.0-beta.1 typecheck:examples
+> npm --prefix ../../plugin-examples/markdown-panel install --ignore-scripts --no-audit --no-fund && tsgo -p tsconfig.examples.json --noEmit
+
+
+added 22 packages in 353ms
+
+> @getpaseo/protocol@0.13.0-beta.1 pretypecheck
+> npm run generate:validators
+
+
+> @getpaseo/protocol@0.13.0-beta.1 generate:validators
+> node scripts/generate-validation-aot.mjs
+
+generated src/generated/validation/ws-outbound.aot.ts: envelope + 234 session message validators
+
+> @getpaseo/protocol@0.13.0-beta.1 typecheck
+> tsgo --noEmit
+
+
+> @getpaseo/client@0.13.0-beta.1 typecheck
+> tsgo --noEmit
+
+
+> @getpaseo/server@0.13.0-beta.1 typecheck
+> tsgo -p tsconfig.server.typecheck.json --noEmit
+
+
+> @getpaseo/app@0.13.0-beta.1 typecheck
+> tsgo --noEmit
+
+e2e/browser/plugin-management.spec.ts(976,20): error TS2339: Property 'invokePluginRpc' does not exist on type 'NewWorkspaceDaemonClient'.
+npm error Lifecycle script `typecheck` failed with error:
+npm error code 2
+npm error path /data/home/hulkzzhou/workspaces/paseo-mcp-services/packages/app
+npm error workspace @getpaseo/app@0.13.0-beta.1
+npm error location /data/home/hulkzzhou/workspaces/paseo-mcp-services/packages/app
+npm error command failed
+npm error command sh -c tsgo --noEmit
+
+
+> @getpaseo/relay@0.13.0-beta.1 typecheck
+> tsgo --noEmit
+
+
+> @getpaseo/website@0.13.0-beta.1 typecheck
+> tsgo --noEmit
+
+
+> @getpaseo/desktop@0.13.0-beta.1 typecheck
+> tsgo --noEmit -p tsconfig.json
+
+
+> @getpaseo/cli@0.13.0-beta.1 typecheck
+> tsgo --noEmit
+

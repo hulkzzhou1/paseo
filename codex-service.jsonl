@@ -1,0 +1,2 @@
+{"event":"initialize","protocolVersion":"2025-06-18","clientInfo":{"name":"codex-mcp-client","title":"Codex","version":"0.160.1"},"pid":2105636,"cwd":"/tmp/paseo-codex-mcp-proof-c4AS1a/plugin","transport":"stdio"}
+{"event":"call","name":"list_repositories","arguments":{"mode":"normal"},"result":{"repositories":[{"id":"orchard","path":"demo/orchard"},{"id":"harbor","path":"demo/harbor"}],"error":null},"pid":2105636,"cwd":"/tmp/paseo-codex-mcp-proof-c4AS1a/plugin","transport":"stdio"}

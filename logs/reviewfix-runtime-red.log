@@ -1,0 +1,42 @@
+
+ RUN  v4.1.6 /data/home/hulkzzhou/workspaces/paseo-mcp-services-reviewfix/packages/server
+
+stdout | src/server/plugins/runtime.posix.test.ts
+[dotenv@17.3.1] injecting env (0) from .env.test -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.3.1] injecting env (0) from ../.env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+
+ ❯ src/server/plugins/runtime.posix.test.ts (45 tests | 1 failed | 41 skipped) 300ms
+     × preserves MCP 'update' after ready across 2 startup microtasks 297ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/server/plugins/runtime.posix.test.ts > PluginRuntime > preserves MCP 'update' after ready across 2 startup microtasks
+AssertionError: expected { …(1) } to deeply equal { …(1) }
+
+- Expected
++ Received
+
+  {
+    "plugin_startup-mcp_repositories": {
+      "type": "http",
+-     "url": "https://current.example/mcp",
++     "url": "https://initial.example/mcp",
+    },
+  }
+
+ ❯ src/server/plugins/runtime.posix.test.ts:277:38
+    275|       try {
+    276|         await runtime.startBuiltinPlugin({ id: "startup-mcp", director…
+    277|         expect(runtime.mcpServers()).toEqual(
+       |                                      ^
+    278|           operation === "update"
+    279|             ? {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 41 skipped (45)
+   Start at  23:19:03
+   Duration  7.59s (transform 5.84s, setup 53ms, import 7.07s, tests 300ms, environment 0ms)
+
