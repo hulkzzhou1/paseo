@@ -176,6 +176,10 @@ Codex MultiAgentV2 real tests use local Codex authentication rather than the Ope
 
 ### Test setup
 
+In a fresh worktree, prepare the [built workspace packages](development.md#built-workspace-packages) before running dependent tests. Installed dependencies alone do not supply the checkout's generated declarations or runtime output. If dependencies were copied or installed without lifecycle scripts, verify that the configured Git hooks are installed before relying on commit-time checks.
+
+Keep production daemon settings out of isolated test processes. When inherited settings such as `PASEO_PASSWORD` conflict with a fixture's connection contract, scope environment changes to that test process; leave production configuration untouched.
+
 - Server: `packages/server/src/test-utils/vitest-setup.ts` loads `.env.test`, sets `PASEO_SUPERVISED=0`, and disables Git/SSH prompts. Add new global env shims here, not in individual tests.
 - App: `packages/app/vitest.setup.ts` provides `expo`/`__DEV__` shims and stubs a few native-only modules (`react-native-unistyles`, `react-native-svg`, `expo-linking`, `@xterm/addon-ligatures`). Stubbing here is for modules that have no meaningful Node behavior — not a license to mock app code.
 
@@ -205,6 +209,12 @@ PR checks are routed by the behavior each suite proves, using `.github/ci-paths.
 Required matrix legs are declared as statically named jobs. Their shared steps use YAML anchors, while job-level `if` conditions let GitHub report an unaffected leg as genuinely skipped without allocating a runner or losing the exact required-check name.
 
 The smallest meaningful contract wins over package ownership. Tiny structural invariants such as daemon launch supervision run unconditionally in the always-running routing job instead of maintaining a transitive file list; this check reads source entrypoints and builds no product. Routed integration contracts use stable domain directories. Browser changes select the required Playwright shards; desktop changes select the existing required desktop jobs, with renderer and real-Electron coverage together in the Ubuntu leg. Packaging runs on main in the Desktop Packages, Docker, and Nix workflows. CLI-side Hub changes select one focused test inside the existing required server jobs. The CLI source suite runs once in the third required CLI job; only the separate local E2E runner is sharded, and that runner owns its dependency build. Repository scripts and the shared Vitest configuration run every PR contract because they are cross-cutting toolchain inputs.
+
+## Real provider acceptance
+
+Unless the case requires a specific model, select one exposed by the provider's public catalog as configured for the current environment. A bundled default may be unsupported by the configured endpoint. Record the actual binary, model and transport with the result.
+
+End polling when the provider reports a terminal failure. Retry assertions must not hide a reported model or API error until the success timeout. Keep environment failures separate from a behavioral regression's red test.
 
 ## Agent authentication in tests
 
