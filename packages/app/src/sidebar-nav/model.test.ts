@@ -31,12 +31,22 @@ function summarize(items: readonly SidebarNavItem[]): SidebarNavPreference[] {
 }
 
 describe("resolveSidebarNavItems", () => {
-  it("offers MCP service management alongside existing navigation", () => {
-    const items = resolveSidebarNavItems({ section: "header", pluginGroups: [], preferences: [] });
-    expect(items.find((item) => item.key === "mcp")).toMatchObject({
-      kind: "builtin",
-      visible: true,
+  it("ignores retired MCP preferences while preserving other order and visibility", () => {
+    const items = resolveSidebarNavItems({
+      section: "header",
+      pluginGroups: [],
+      preferences: [
+        { key: "search", visible: false },
+        { key: "mcp", visible: true },
+        { key: "history", visible: true },
+      ],
     });
+    expect(summarize(items)).toEqual([
+      { key: "search", visible: false },
+      { key: "history", visible: true },
+      { key: "new-workspace", visible: true },
+      { key: "schedules", visible: true },
+    ]);
   });
 
   it("yields builtins then plugins, all visible, when nothing is stored", () => {
@@ -51,11 +61,10 @@ describe("resolveSidebarNavItems", () => {
       { key: "history", visible: true },
       { key: "search", visible: true },
       { key: "schedules", visible: true },
-      { key: "mcp", visible: true },
       { key: kanbanKey, visible: true },
       { key: notesKey, visible: true },
     ]);
-    expect(items[5]).toEqual({ kind: "plugin", key: kanbanKey, group: kanban, visible: true });
+    expect(items[4]).toEqual({ kind: "plugin", key: kanbanKey, group: kanban, visible: true });
     expect(items[0]).toEqual({
       kind: "builtin",
       key: "new-workspace",
@@ -81,7 +90,6 @@ describe("resolveSidebarNavItems", () => {
       { key: "new-workspace", visible: false },
       { key: "history", visible: true },
       { key: "search", visible: true },
-      { key: "mcp", visible: true },
       { key: notesKey, visible: true },
     ]);
   });
@@ -102,7 +110,6 @@ describe("resolveSidebarNavItems", () => {
       "new-workspace",
       "search",
       "schedules",
-      "mcp",
     ]);
   });
 
@@ -121,7 +128,6 @@ describe("resolveSidebarNavItems", () => {
       { key: "new-workspace", visible: true },
       { key: "search", visible: true },
       { key: "schedules", visible: true },
-      { key: "mcp", visible: true },
     ]);
   });
 });
@@ -151,7 +157,6 @@ describe("setSidebarNavItemVisible", () => {
       { key: "history", visible: true },
       { key: "search", visible: false },
       { key: "schedules", visible: true },
-      { key: "mcp", visible: true },
       { key: kanbanKey, visible: true },
     ]);
   });
@@ -175,7 +180,6 @@ describe("setSidebarNavItemVisible", () => {
       { key: "new-workspace", visible: true },
       { key: "search", visible: true },
       { key: "schedules", visible: true },
-      { key: "mcp", visible: true },
     ]);
   });
 
@@ -201,7 +205,6 @@ describe("setSidebarNavItemVisible", () => {
       { key: "history", visible: false },
       { key: "search", visible: true },
       { key: "schedules", visible: true },
-      { key: "mcp", visible: true },
     ]);
     expect(
       summarize(
@@ -242,7 +245,6 @@ describe("moveSidebarNavItem", () => {
       "search",
       "history",
       "schedules",
-      "mcp",
       kanbanKey,
     ]);
   });
@@ -254,9 +256,8 @@ describe("moveSidebarNavItem", () => {
       "new-workspace",
       "history",
       "search",
-      "mcp",
-      "schedules",
       kanbanKey,
+      "schedules",
     ]);
   });
 

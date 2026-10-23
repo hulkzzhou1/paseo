@@ -2542,7 +2542,7 @@ Paseo does not save these contributions as the Agent's manual MCP configuration.
 process the plugin itself starts during cleanup; unregistering a remote endpoint never deletes the
 remote service.
 
-The sidebar **MCP** page shows the selected host's safe registration summary and plugin configuration
+The **MCP services** page in Settings shows the selected host's safe registration summary and plugin configuration
 link. **Registered** means a definition exists, not that every Agent connected. The page does not
 start services, expose credentials or offer a tool directory. Plugin UI keeps ordinary
 [`useRpc()`](#add-plugin-specific-backend-behavior): share business functions with your MCP handlers,

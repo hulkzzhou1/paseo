@@ -1,5 +1,5 @@
 import { router, usePathname } from "expo-router";
-import { CalendarClock, History, Network, Plus, Search } from "lucide-react-native";
+import { CalendarClock, History, Plus, Search } from "lucide-react-native";
 import { memo, useCallback, useMemo, useRef, type ComponentType, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { View, type StyleProp, type ViewStyle } from "react-native";
@@ -8,9 +8,6 @@ import { SidebarHeaderRow } from "@/components/sidebar/sidebar-header-row";
 import { useShortcutKeys } from "@/hooks/use-shortcut-keys";
 import { PluginSidebarItem } from "@/plugins/sidebar-items";
 import { canCreateWorktreeForProjectKind } from "@/projects/host-projects";
-import { useHosts } from "@/runtime/host-runtime";
-import { useLocalDaemonServerId } from "@/hooks/use-is-local-daemon";
-import { resolveActiveHostServerId } from "@/types/host-connection";
 import { useHostFeature } from "@/runtime/host-features";
 import {
   builtinSidebarNavLabelKey,
@@ -23,9 +20,6 @@ import { useActiveWorkspaceSelection } from "@/stores/navigation-active-workspac
 import { useWorkspace } from "@/stores/session-store-hooks";
 import {
   buildNewWorkspaceRoute,
-  buildSettingsHostSectionRoute,
-  buildSettingsRoute,
-  parseServerIdFromPathname,
   buildSchedulesRoute,
   buildSessionsRoute,
 } from "@/utils/host-routes";
@@ -192,38 +186,11 @@ function SidebarSchedulesRow({ onBeforeNavigate }: SidebarNavRowProps) {
   );
 }
 
-function SidebarMcpRow({ onBeforeNavigate }: SidebarNavRowProps) {
-  const { t } = useTranslation();
-  const hosts = useHosts();
-  const localServerId = useLocalDaemonServerId();
-  const routeServerId = parseServerIdFromPathname(usePathname());
-  const handlePress = useCallback(() => {
-    const serverId = resolveActiveHostServerId({
-      selectedServerId: routeServerId,
-      localServerId,
-      hosts,
-      orderedHosts: hosts,
-    });
-    onBeforeNavigate?.();
-    router.push(serverId ? buildSettingsHostSectionRoute(serverId, "mcp") : buildSettingsRoute());
-  }, [hosts, localServerId, onBeforeNavigate, routeServerId]);
-  return (
-    <SidebarHeaderRow
-      icon={Network}
-      label={t("mcp.title")}
-      onPress={handlePress}
-      testID="sidebar-mcp"
-      variant="compact"
-    />
-  );
-}
-
 const BUILTIN_ROWS: Record<BuiltinSidebarNavId, ComponentType<SidebarNavRowProps>> = {
   "new-workspace": SidebarNewWorkspaceRow,
   history: SidebarHistoryRow,
   search: SidebarSearchRow,
   schedules: SidebarSchedulesRow,
-  mcp: SidebarMcpRow,
 };
 
 const styles = StyleSheet.create({

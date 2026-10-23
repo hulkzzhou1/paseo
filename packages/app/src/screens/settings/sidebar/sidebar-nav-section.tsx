@@ -8,7 +8,6 @@ import {
   Blocks,
   CalendarClock,
   Gauge,
-  Network,
   History,
   Plus,
   Search,
@@ -46,7 +45,6 @@ const BUILTIN_ICONS: Record<BuiltinSidebarItemId, LucideIcon> = {
   search: Search,
   schedules: CalendarClock,
   usage: Gauge,
-  mcp: Network,
 };
 
 /** Plugin items register no icon, so they share this one; a legacy `addSidebarItem` keeps its own. */

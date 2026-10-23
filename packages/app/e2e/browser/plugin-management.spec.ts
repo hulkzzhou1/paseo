@@ -889,7 +889,9 @@ test("MCP services links the registered service to its plugin configuration", as
     await client.patchDaemonConfig({ pluginsEnabled: true });
     await client.installDirectoryPlugin(example.directory);
     await gotoAppShell(page);
-    await page.getByTestId("sidebar-mcp").click();
+    await expect(page.getByTestId("sidebar-mcp")).toHaveCount(0);
+    await openSettings(page);
+    await page.getByTestId("settings-host-section-mcp").click();
     await expect(page).toHaveURL(new RegExp(`/settings/hosts/${getServerId()}/mcp$`));
     const service = page.getByTestId("mcp-service-repository-mcp").filter({ visible: true });
     await expect(service).toContainText("Fictional repositories");
@@ -917,9 +919,7 @@ test("MCP services links the registered service to its plugin configuration", as
     await client.disablePlugin("repository-mcp");
     await expect(service).toHaveCount(0);
     await expect(
-      page
-        .getByText("No plugin MCP services registered", { exact: true })
-        .filter({ visible: true }),
+      page.getByText("No MCP services registered", { exact: true }).filter({ visible: true }),
     ).toBeVisible();
   } finally {
     await client.removePlugin("repository-mcp");
@@ -927,10 +927,54 @@ test("MCP services links the registered service to its plugin configuration", as
   }
 });
 
+test("MCP services distinguishes a failed load from an empty list and retries", async ({
+  page,
+}) => {
+  let fail = true;
+  await page.routeWebSocket(daemonWsRoutePattern(), (browser) => {
+    const server = browser.connectToServer();
+    browser.onMessage((message) => {
+      if (typeof message === "string") {
+        const request = JSON.parse(message).message;
+        if (fail && request?.type === "plugin.list.request") {
+          browser.send(
+            JSON.stringify({
+              type: "session",
+              message: {
+                type: "rpc_error",
+                payload: {
+                  requestId: request.requestId,
+                  requestType: request.type,
+                  error: "Service catalog unavailable",
+                  code: "handler_error",
+                },
+              },
+            }),
+          );
+          return;
+        }
+      }
+      server.send(message);
+    });
+    server.onMessage((message) => browser.send(message));
+  });
+  await gotoAppShell(page);
+  await openSettings(page);
+  await page.getByTestId("settings-host-section-mcp").click();
+  await expect(page.getByText("Unable to load MCP services", { exact: true })).toBeVisible();
+  await expect(page.getByText("No MCP services registered", { exact: true })).toHaveCount(0);
+  fail = false;
+  await page.getByRole("button", { name: "Retry", exact: true }).click();
+  await expect(page.getByText("No MCP services registered", { exact: true })).toBeVisible();
+  await expect(page.getByText("Unable to load MCP services", { exact: true })).toHaveCount(0);
+});
+
 test("MCP services asks an older host to update", async ({ page }) => {
   await advertisePluginCapabilities(page, { pluginMcpServers: false });
   await gotoAppShell(page);
-  await page.getByTestId("sidebar-mcp").click();
+  await expect(page.getByTestId("sidebar-mcp")).toHaveCount(0);
+  await openSettings(page);
+  await page.getByTestId("settings-host-section-mcp").click();
   await expect(
     page.getByText("Update this host to manage plugin MCP services", { exact: true }),
   ).toBeVisible();
@@ -966,7 +1010,9 @@ test.describe("MCP services compact", () => {
       await client.installDirectoryPlugin(example.directory);
       await gotoAppShell(page);
       await page.getByRole("button", { name: "Open menu", exact: true }).first().tap();
-      await page.getByTestId("sidebar-mcp").tap();
+      await expect(page.getByTestId("sidebar-mcp")).toHaveCount(0);
+      await page.getByTestId("sidebar-settings").tap();
+      await page.getByTestId("settings-host-section-mcp").tap();
       const service = page.getByTestId("mcp-service-repository-mcp");
       const configure = service.getByRole("button", { name: "Configure", exact: true });
       await expect(service).toContainText("Not configured");
@@ -1003,7 +1049,9 @@ test.describe("MCP services compact", () => {
       await client.installDirectoryPlugin(example.directory);
       await gotoAppShell(page);
       await page.getByRole("button", { name: "Open menu", exact: true }).first().tap();
-      await page.getByTestId("sidebar-mcp").tap();
+      await expect(page.getByTestId("sidebar-mcp")).toHaveCount(0);
+      await page.getByTestId("sidebar-settings").tap();
+      await page.getByTestId("settings-host-section-mcp").tap();
       const configure = page
         .getByTestId("mcp-service-repository-mcp")
         .getByRole("button", { name: "Configure", exact: true });
@@ -1091,9 +1139,7 @@ test("MCP services ignores old host responses while switching hosts", async ({
     await expect.poll(() => held.length).toBeGreaterThan(0);
     await selectSettingsHost(page, second.serverId);
     await expect(
-      page
-        .getByText("No plugin MCP services registered", { exact: true })
-        .filter({ visible: true }),
+      page.getByText("No MCP services registered", { exact: true }).filter({ visible: true }),
     ).toBeVisible();
     const reconnect = page.waitForEvent("websocket", (socket) =>
       socket.url().includes(`:${second.port}/ws`),
@@ -1101,19 +1147,20 @@ test("MCP services ignores old host responses while switching hosts", async ({
     await second.restart();
     await reconnect;
     await expect(
-      page
-        .getByText("No plugin MCP services registered", { exact: true })
-        .filter({ visible: true }),
+      page.getByText("No MCP services registered", { exact: true }).filter({ visible: true }),
     ).toBeVisible();
     hold = false;
     for (const reply of held.splice(0)) reply.send(reply.message);
     await expect(page.getByTestId("mcp-service-repository-mcp")).toHaveCount(0);
     await expect(page).toHaveURL(new RegExp(`/settings/hosts/${second.serverId}/mcp$`));
     await expect(
-      page
-        .getByText("No plugin MCP services registered", { exact: true })
-        .filter({ visible: true }),
+      page.getByText("No MCP services registered", { exact: true }).filter({ visible: true }),
     ).toBeVisible();
+    await second.close();
+    await expect(
+      page.getByText("Connect to this host to view MCP services", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("No MCP services registered", { exact: true })).toHaveCount(0);
   } finally {
     hold = false;
     for (const reply of held.splice(0)) reply.send(reply.message);
