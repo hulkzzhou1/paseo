@@ -53,3 +53,28 @@ it("drops fields from the previous transport when changing form transport", () =
   model.setMode("json");
   expect(JSON.parse(model.getState().json)).toEqual({ type: "stdio", command: "next" });
 });
+
+for (const config of [
+  { type: "stdio" as const, command: "fictional-mcp" },
+  { type: "http" as const, url: "https://example.invalid/mcp" },
+  { type: "sse" as const, url: "https://example.invalid/events" },
+]) {
+  it.each([undefined, false, true])(
+    `preserves alwaysLoad=%s when editing ${config.type} and switching modes`,
+    (alwaysLoad) => {
+      const connection = { ...config, ...(alwaysLoad === undefined ? {} : { alwaysLoad }) };
+      const service = { name: "Tools", enabled: true, config: connection };
+      const model = openMcpServiceForm(service);
+      expect(model.getSubmission()).toEqual(service);
+      model.setMode("json");
+      expect(JSON.parse(model.getState().json)).toEqual(connection);
+      model.setMode("form");
+      expect(model.getSubmission()).toEqual(service);
+      model.setMode("json");
+      expect(JSON.parse(model.getState().json)).toEqual(connection);
+      model.setField("json", JSON.stringify({ ...connection, alwaysLoad: !alwaysLoad }));
+      model.setMode("form");
+      expect(model.getSubmission()?.config.alwaysLoad).toBe(!alwaysLoad);
+    },
+  );
+}

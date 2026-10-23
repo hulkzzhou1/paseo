@@ -3,6 +3,7 @@ import { ManagedMcpServiceSchema, type ManagedMcpService } from "@getpaseo/proto
 
 interface FormFields {
   name: string;
+  alwaysLoad?: boolean;
   type: "stdio" | "http" | "sse";
   command: string;
   args: string;
@@ -22,6 +23,7 @@ const configSchema = z.union([
 function connectionFields(config?: ManagedMcpService["config"]) {
   return {
     type: config?.type ?? "stdio",
+    alwaysLoad: config?.alwaysLoad,
     command: config?.type === "stdio" ? config.command : "",
     args: config?.type === "stdio" ? (JSON.stringify(config.args) ?? "") : "",
     env: config?.type === "stdio" ? (JSON.stringify(config.env) ?? "") : "",
@@ -46,12 +48,18 @@ export function openMcpServiceForm(service?: ManagedMcpService) {
     if (fields.type === "stdio") {
       return {
         type: "stdio",
+        ...(fields.alwaysLoad === undefined ? {} : { alwaysLoad: fields.alwaysLoad }),
         command: fields.command.trim(),
         args: parseOptional(fields.args),
         env: parseOptional(fields.env),
       };
     }
-    return { type: fields.type, url: fields.url.trim(), headers: parseOptional(fields.headers) };
+    return {
+      type: fields.type,
+      url: fields.url.trim(),
+      headers: parseOptional(fields.headers),
+      ...(fields.alwaysLoad === undefined ? {} : { alwaysLoad: fields.alwaysLoad }),
+    };
   }
   function submission(): ManagedMcpService | null {
     try {
