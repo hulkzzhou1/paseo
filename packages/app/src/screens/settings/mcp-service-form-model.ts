@@ -9,43 +9,82 @@ interface FormFields {
   env: string;
   url: string;
   headers: string;
+  mode: "form" | "json";
+  json: string;
 }
 
-function stringMap(value: string): Record<string, string> {
-  return z.record(z.string(), z.string()).parse(JSON.parse(value || "{}"));
+// Reject unknown JSON keys rather than silently discarding pasted configuration.
+const configSchema = z.union([
+  ManagedMcpServiceSchema.shape.config.options[0].strict(),
+  ManagedMcpServiceSchema.shape.config.options[1].strict(),
+  ManagedMcpServiceSchema.shape.config.options[2].strict(),
+]);
+function connectionFields(config?: ManagedMcpService["config"]) {
+  return {
+    type: config?.type ?? "stdio",
+    command: config?.type === "stdio" ? config.command : "",
+    args: config?.type === "stdio" ? (JSON.stringify(config.args) ?? "") : "",
+    env: config?.type === "stdio" ? (JSON.stringify(config.env) ?? "") : "",
+    url: config && config.type !== "stdio" ? config.url : "",
+    headers: config && config.type !== "stdio" ? (JSON.stringify(config.headers) ?? "") : "",
+  };
+}
+function parseOptional(value: string): unknown {
+  return value.trim() ? JSON.parse(value) : undefined;
 }
 
 export function openMcpServiceForm(service?: ManagedMcpService) {
-  const config = service?.config;
   let fields: FormFields = {
     name: service?.name ?? "",
-    type: config?.type ?? "stdio",
-    command: config?.type === "stdio" ? config.command : "",
-    args: JSON.stringify(config?.type === "stdio" ? (config.args ?? []) : []),
-    env: JSON.stringify(config?.type === "stdio" ? (config.env ?? {}) : {}),
-    url: config && config.type !== "stdio" ? config.url : "",
-    headers: JSON.stringify(config && config.type !== "stdio" ? (config.headers ?? {}) : {}),
+    ...connectionFields(service?.config),
+    mode: "form",
+    json: "",
   };
   const listeners = new Set<() => void>();
+  function connection() {
+    if (fields.mode === "json") return JSON.parse(fields.json);
+    if (fields.type === "stdio") {
+      return {
+        type: "stdio",
+        command: fields.command.trim(),
+        args: parseOptional(fields.args),
+        env: parseOptional(fields.env),
+      };
+    }
+    return { type: fields.type, url: fields.url.trim(), headers: parseOptional(fields.headers) };
+  }
   function submission(): ManagedMcpService | null {
     try {
-      const args: unknown = fields.type === "stdio" ? JSON.parse(fields.args || "[]") : [];
-      const result = ManagedMcpServiceSchema.safeParse({
+      return ManagedMcpServiceSchema.parse({
         name: fields.name.trim(),
         enabled: service?.enabled ?? true,
-        config:
-          fields.type === "stdio"
-            ? { type: "stdio", command: fields.command.trim(), args, env: stringMap(fields.env) }
-            : { type: fields.type, url: fields.url.trim(), headers: stringMap(fields.headers) },
+        config: configSchema.parse(connection()),
       });
-      return result.success ? result.data : null;
     } catch (error) {
       if (error instanceof SyntaxError || error instanceof z.ZodError) return null;
       throw error;
     }
   }
-  let state = { ...fields, canSubmit: submission() !== null };
+  let state = { ...fields, canSubmit: submission() !== null, modeError: false };
+  function publish(modeError = false) {
+    state = { ...fields, canSubmit: submission() !== null, modeError };
+    for (const listener of listeners) listener();
+  }
   return {
+    setMode(mode: "form" | "json") {
+      if (mode === fields.mode) return;
+      try {
+        const config = connection();
+        fields =
+          mode === "json"
+            ? { ...fields, mode, json: JSON.stringify(config, null, 2) }
+            : { ...fields, mode, ...connectionFields(configSchema.parse(config)) };
+        publish();
+      } catch (error) {
+        if (!(error instanceof SyntaxError || error instanceof z.ZodError)) throw error;
+        publish(true);
+      }
+    },
     getState: () => state,
     subscribe(listener: () => void) {
       listeners.add(listener);
@@ -58,8 +97,7 @@ export function openMcpServiceForm(service?: ManagedMcpService) {
     },
     setField<K extends keyof FormFields>(field: K, value: FormFields[K]) {
       fields = { ...fields, [field]: value };
-      state = { ...fields, canSubmit: submission() !== null };
-      for (const listener of listeners) listener();
+      publish();
     },
     getSubmission: submission,
   };

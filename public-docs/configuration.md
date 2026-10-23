@@ -86,6 +86,8 @@ See [Providers](/docs/providers) for the mental model and [Supported providers](
 
 ## MCP services
 
+Use **Form / JSON** when adding or editing a manual service. JSON contains one connection object (`type` and its connection fields); the name stays outside it. Invalid drafts remain in the editor until corrected, including when switching modes.
+
 Open **Settings > MCP services** and select the target host. Add a manual service using stdio,
 Streamable HTTP or SSE, then edit, disable or delete it from this page. Disabling keeps its settings;
 deleting requires confirmation. Plugin services appear alongside manual services, but their own

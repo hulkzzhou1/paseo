@@ -7,6 +7,7 @@ import { StyleSheet } from "react-native-unistyles";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, FormTextInput } from "@/components/ui/form-field";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SelectField } from "@/components/ui/select-field";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { openMcpServiceForm } from "./mcp-service-form-model";
@@ -33,6 +34,7 @@ export function McpServiceForm({
   const display = useMemo(() => ({ label: state.type }), [state.type]);
   const handlers = useMemo(
     () => ({
+      json: (value: string) => model.setField("json", value),
       name: (value: string) => model.setField("name", value),
       command: (value: string) => model.setField("command", value),
       args: (value: string) => model.setField("args", value),
@@ -55,79 +57,115 @@ export function McpServiceForm({
           editable={!mutation.isPending}
         />
       </Field>
-      <SelectField
-        label={t("mcp.transport")}
-        value={state.type}
-        selectedDisplay={display}
-        options={TRANSPORT_OPTIONS}
-        onChange={handlers.type}
-        placeholder={t("mcp.transport")}
-        emptyText=""
+      <SegmentedControl
         size={size}
-        disabled={mutation.isPending}
-        testID="mcp-transport"
-        triggerTestID="mcp-transport-trigger"
+        value={state.mode}
+        onValueChange={model.setMode}
+        options={[
+          {
+            value: "form",
+            label: t("mcp.formMode"),
+            testID: "mcp-mode-form",
+            disabled: mutation.isPending,
+          },
+          { value: "json", label: "JSON", testID: "mcp-mode-json", disabled: mutation.isPending },
+        ]}
       />
-      {state.type === "stdio" ? (
-        <>
-          <Field label={t("mcp.command")}>
-            <FormTextInput
-              size={size}
-              initialValue={state.command}
-              onChangeText={handlers.command}
-              accessibilityLabel={t("mcp.command")}
-              testID="mcp-command"
-              editable={!mutation.isPending}
-            />
-          </Field>
-          <Field label={t("mcp.args")}>
-            <FormTextInput
-              size={size}
-              initialValue={state.args}
-              onChangeText={handlers.args}
-              accessibilityLabel={t("mcp.args")}
-              testID="mcp-args"
-              editable={!mutation.isPending}
-            />
-          </Field>
-          <Field label={t("mcp.env")}>
-            <FormTextInput
-              size={size}
-              initialValue={state.env}
-              onChangeText={handlers.env}
-              accessibilityLabel={t("mcp.env")}
-              testID="mcp-env"
-              editable={!mutation.isPending}
-              secureTextEntry
-            />
-          </Field>
-        </>
+      {state.mode === "json" ? (
+        <Field label={t("mcp.jsonConfig")}>
+          <FormTextInput
+            size={size}
+            initialValue={state.json}
+            onChangeText={handlers.json}
+            accessibilityLabel={t("mcp.jsonConfig")}
+            testID="mcp-json"
+            editable={!mutation.isPending}
+            multiline
+            numberOfLines={10}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </Field>
       ) : (
         <>
-          <Field label="URL">
-            <FormTextInput
-              size={size}
-              initialValue={state.url}
-              onChangeText={handlers.url}
-              accessibilityLabel="URL"
-              testID="mcp-url"
-              editable={!mutation.isPending}
-            />
-          </Field>
-          <Field label={t("mcp.headers")}>
-            <FormTextInput
-              size={size}
-              initialValue={state.headers}
-              onChangeText={handlers.headers}
-              accessibilityLabel={t("mcp.headers")}
-              testID="mcp-headers"
-              editable={!mutation.isPending}
-              secureTextEntry
-            />
-          </Field>
+          <SelectField
+            label={t("mcp.transport")}
+            value={state.type}
+            selectedDisplay={display}
+            options={TRANSPORT_OPTIONS}
+            onChange={handlers.type}
+            placeholder={t("mcp.transport")}
+            emptyText=""
+            size={size}
+            disabled={mutation.isPending}
+            testID="mcp-transport"
+            triggerTestID="mcp-transport-trigger"
+          />
+          {state.type === "stdio" ? (
+            <>
+              <Field label={t("mcp.command")}>
+                <FormTextInput
+                  size={size}
+                  initialValue={state.command}
+                  onChangeText={handlers.command}
+                  accessibilityLabel={t("mcp.command")}
+                  testID="mcp-command"
+                  editable={!mutation.isPending}
+                />
+              </Field>
+              <Field label={t("mcp.args")}>
+                <FormTextInput
+                  size={size}
+                  initialValue={state.args}
+                  onChangeText={handlers.args}
+                  accessibilityLabel={t("mcp.args")}
+                  testID="mcp-args"
+                  editable={!mutation.isPending}
+                />
+              </Field>
+              <Field label={t("mcp.env")}>
+                <FormTextInput
+                  size={size}
+                  initialValue={state.env}
+                  onChangeText={handlers.env}
+                  accessibilityLabel={t("mcp.env")}
+                  testID="mcp-env"
+                  editable={!mutation.isPending}
+                  secureTextEntry
+                />
+              </Field>
+            </>
+          ) : (
+            <>
+              <Field label="URL">
+                <FormTextInput
+                  size={size}
+                  initialValue={state.url}
+                  onChangeText={handlers.url}
+                  accessibilityLabel="URL"
+                  testID="mcp-url"
+                  editable={!mutation.isPending}
+                />
+              </Field>
+              <Field label={t("mcp.headers")}>
+                <FormTextInput
+                  size={size}
+                  initialValue={state.headers}
+                  onChangeText={handlers.headers}
+                  accessibilityLabel={t("mcp.headers")}
+                  testID="mcp-headers"
+                  editable={!mutation.isPending}
+                  secureTextEntry
+                />
+              </Field>
+            </>
+          )}
         </>
       )}
-      {!state.canSubmit ? <Alert title={t("mcp.invalid")} /> : null}
+      {state.modeError ? <Alert title={t("mcp.modeError")} /> : null}
+      {!state.canSubmit ? (
+        <Alert title={t(state.mode === "json" ? "mcp.invalidJson" : "mcp.invalid")} />
+      ) : null}
       {mutation.isError ? (
         <Alert
           variant="error"

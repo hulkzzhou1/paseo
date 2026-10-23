@@ -1,4 +1,9 @@
 const management = {
+  formMode: "Form",
+  jsonConfig: "Connection JSON",
+  invalidJson:
+    "Enter a valid connection object with type and its supported fields. Check JSON syntax and field types.",
+  modeError: "Fix the connection draft before switching modes. Your input has been kept.",
   name: "Name",
   transport: "Transport",
   command: "Command",
@@ -33,6 +38,10 @@ export const mcpServices = {
   },
   "zh-CN": {
     ...management,
+    formMode: "表单",
+    jsonConfig: "连接配置 JSON",
+    invalidJson: "请输入包含 type 及对应支持字段的有效连接对象，并检查 JSON 语法和字段类型。",
+    modeError: "请先修正连接配置再切换模式。当前输入已保留。",
     name: "名称",
     transport: "传输方式",
     command: "命令",

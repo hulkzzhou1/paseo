@@ -1305,3 +1305,132 @@ test.describe("manual MCP compact", () => {
     }
   });
 });
+
+test("manual MCP JSON editing retains drafts and round trips all transports", async ({
+  page,
+  pluginEnvironment,
+}, testInfo) => {
+  const { client } = pluginEnvironment;
+  const previous = (await client.getDaemonConfig()).config.mcpServers ?? {};
+  try {
+    await gotoAppShell(page);
+    await openSettings(page);
+    await page.getByTestId("settings-host-section-mcp").click();
+    await page.getByTestId("mcp-add").click();
+    await page.getByTestId("mcp-name").fill("JSON tools");
+    await page.getByTestId("mcp-mode-json").click();
+    await page.getByTestId("mcp-json").fill('{"type":"stdio",');
+    await expect(page.getByTestId("mcp-save")).toBeDisabled();
+    await page.getByTestId("mcp-mode-form").click();
+    await expect(page.getByTestId("mcp-json")).toHaveValue('{"type":"stdio",');
+    await expect(
+      page.getByText("Fix the connection draft before switching modes. Your input has been kept."),
+    ).toBeVisible();
+    const local = {
+      type: "stdio",
+      command: "fictional-json-mcp",
+      args: ["--read-only"],
+      env: { TOKEN: "fictional-only" },
+    };
+    await page.getByTestId("mcp-json").fill(JSON.stringify(local));
+    await page.getByTestId("mcp-mode-form").click();
+    await expect(page.getByTestId("mcp-command")).toHaveValue(local.command);
+    await page.getByTestId("mcp-mode-json").click();
+    expect(JSON.parse(await page.getByTestId("mcp-json").inputValue())).toEqual(local);
+    await page.screenshot({ path: testInfo.outputPath("mcp-json-desktop.png"), fullPage: true });
+    await page.getByTestId("mcp-save").click();
+    const rows = page.locator('[data-testid^="mcp-manual-"]');
+    await expect(rows).toContainText(["JSON tools"]);
+    const [id] = Object.entries((await client.getDaemonConfig()).config.mcpServers ?? {}).find(
+      ([, s]) => s.name === "JSON tools",
+    )!;
+    expect((await client.getDaemonConfig()).config.mcpServers?.[id]?.config).toEqual(local);
+    for (const type of ["http", "sse"] as const) {
+      await page
+        .getByTestId(`mcp-manual-${id}`)
+        .getByRole("button", { name: "Edit", exact: true })
+        .click();
+      await page.getByTestId("mcp-mode-json").click();
+      const remote = { type, url: `https://example.invalid/${type}` };
+      const raw = JSON.stringify(remote);
+      await page.getByTestId("mcp-json").fill(raw);
+      await client.patchDaemonConfig({
+        mcpServers: {
+          "concurrent-json": {
+            name: "Concurrent JSON",
+            enabled: true,
+            config: { type: "http", url: "https://example.invalid/concurrent" },
+          },
+        },
+      });
+      await expect(rows).toContainText(["JSON tools", "Concurrent JSON"]);
+      await expect(page.getByTestId("mcp-json")).toHaveValue(raw);
+      await page.getByTestId("mcp-name").fill("Concurrent JSON");
+      await page.getByTestId("mcp-save").click();
+      await expect(
+        page.getByText("An MCP service with this name already exists. Choose another name.", {
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(page.getByTestId("mcp-json")).toHaveValue(raw);
+      await page.getByTestId("mcp-name").fill("JSON tools");
+      await page.getByTestId("mcp-mode-form").click();
+      await expect(page.getByTestId("mcp-url")).toHaveValue(remote.url);
+      await page.getByTestId("mcp-mode-json").click();
+      expect(JSON.parse(await page.getByTestId("mcp-json").inputValue())).toEqual(remote);
+      await page.getByTestId("mcp-save").focus();
+      await page.keyboard.press("Enter");
+      await expect(page.getByTestId("mcp-service-form")).not.toBeVisible();
+      expect((await client.getDaemonConfig()).config.mcpServers?.[id]?.config).toEqual(remote);
+    }
+  } finally {
+    const current = (await client.getDaemonConfig()).config.mcpServers ?? {};
+    await client.patchDaemonConfig({
+      mcpServers: {
+        ...Object.fromEntries(Object.keys(current).map((id) => [id, null])),
+        ...previous,
+      },
+    });
+  }
+});
+
+test.describe("manual MCP JSON compact", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+  test("edits JSON with touch and keyboard without overflow", async ({
+    page,
+    pluginEnvironment,
+  }, testInfo) => {
+    const { client } = pluginEnvironment;
+    try {
+      await gotoAppShell(page);
+      await openCompactSettings(page, buildOpenProjectRoute());
+      await page.getByTestId("settings-host-section-mcp").tap();
+      await page.getByTestId("mcp-add").tap();
+      await page.getByTestId("mcp-name").fill("Phone JSON");
+      await page.getByTestId("mcp-mode-json").tap();
+      await page
+        .getByTestId("mcp-json")
+        .fill(JSON.stringify({ type: "http", url: "https://example.invalid/mobile" }, null, 2));
+      await page.screenshot({ path: testInfo.outputPath("mcp-json-compact.png"), fullPage: true });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+      await page.getByTestId("mcp-mode-form").tap();
+      await expect(page.getByTestId("mcp-url")).toHaveValue("https://example.invalid/mobile");
+      await page.getByTestId("mcp-mode-json").focus();
+      await page.keyboard.press("Enter");
+      await expect(page.getByTestId("mcp-json")).toBeVisible();
+      await page.getByTestId("mcp-save").tap();
+      await expect(page.getByText("Phone JSON", { exact: true })).toBeVisible();
+    } finally {
+      const services = (await client.getDaemonConfig()).config.mcpServers ?? {};
+      await client.patchDaemonConfig({
+        mcpServers: Object.fromEntries(
+          Object.entries(services)
+            .filter(([, s]) => s.name === "Phone JSON")
+            .map(([id]) => [id, null]),
+        ),
+      });
+    }
+  });
+});
