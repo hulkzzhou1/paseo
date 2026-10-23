@@ -976,7 +976,7 @@ test("MCP services asks an older host to update", async ({ page }) => {
   await openSettings(page);
   await page.getByTestId("settings-host-section-mcp").click();
   await expect(
-    page.getByText("Update this host to manage plugin MCP services", { exact: true }),
+    page.getByText("Update this host to manage MCP services", { exact: true }),
   ).toBeVisible();
   await expect(page.getByTestId("mcp-services-page")).toHaveCount(0);
 });
@@ -1111,7 +1111,9 @@ test("MCP services ignores old host responses while switching hosts", async ({
       if (
         hold &&
         typeof message === "string" &&
-        JSON.parse(message).message?.type === "plugin.list.response"
+        ["plugin.list.response", "set_daemon_config_response"].includes(
+          JSON.parse(message).message?.type,
+        )
       )
         held.push({ send: browser.send.bind(browser), message });
       else browser.send(message);
@@ -1149,8 +1151,18 @@ test("MCP services ignores old host responses while switching hosts", async ({
     await expect(page.getByTestId("mcp-service-repository-mcp")).toBeVisible();
     await expect(page.getByTestId("mcp-manual-hostrace")).toBeVisible();
     hold = true;
+    await page
+      .getByTestId("mcp-manual-hostrace")
+      .getByRole("button", { name: "Disable", exact: true })
+      .click();
+    await expect
+      .poll(() =>
+        held.some(
+          (reply) => JSON.parse(reply.message).message?.type === "set_daemon_config_response",
+        ),
+      )
+      .toBe(true);
     await client.reloadPlugin("repository-mcp");
-    await expect.poll(() => held.length).toBeGreaterThan(0);
     await selectSettingsHost(page, second.serverId);
     await expect(
       page.getByText("No MCP services registered", { exact: true }).filter({ visible: true }),
@@ -1167,6 +1179,8 @@ test("MCP services ignores old host responses while switching hosts", async ({
     for (const reply of held.splice(0)) reply.send(reply.message);
     await expect(page.getByTestId("mcp-service-repository-mcp")).toHaveCount(0);
     await expect(page.getByTestId("mcp-manual-hostrace")).toHaveCount(0);
+    await expect(page.getByText("MCP service disabled", { exact: true })).toHaveCount(0);
+    expect((await client.getDaemonConfig()).config.mcpServers?.hostrace.enabled).toBe(false);
     await expect(page).toHaveURL(new RegExp(`/settings/hosts/${second.serverId}/mcp$`));
     await expect(
       page.getByText("No MCP services registered", { exact: true }).filter({ visible: true }),
@@ -1287,12 +1301,27 @@ test.describe("manual MCP compact", () => {
       await page.getByTestId("mcp-add").tap();
       await page.getByTestId("mcp-name").fill("Phone tools");
       await page.getByTestId("mcp-command").fill("fictional-mobile-mcp");
+      await page.screenshot({
+        path: testInfo.outputPath("manual-mcp-compact-form.png"),
+        fullPage: true,
+      });
       await page.getByTestId("mcp-save").tap();
       await expect(page.getByText("Phone tools", { exact: true })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true,
       );
+      const row = page.locator('[data-testid^="mcp-manual-"]').filter({ hasText: "Phone tools" });
+      await row.getByRole("button", { name: "Disable", exact: true }).tap();
+      await expect(row.getByText("Disabled", { exact: true })).toBeVisible();
+      await row.getByRole("button", { name: "Enable", exact: true }).tap();
+      await expect(row.getByRole("button", { name: "Disable", exact: true })).toBeVisible();
       await page.screenshot({ path: testInfo.outputPath("manual-mcp-touch.png"), fullPage: true });
+      page.once("dialog", (dialog) => dialog.dismiss());
+      await row.getByRole("button", { name: "Delete", exact: true }).tap();
+      await expect(row.getByRole("button", { name: "Delete", exact: true })).toBeEnabled();
+      page.once("dialog", (dialog) => dialog.accept());
+      await row.getByRole("button", { name: "Delete", exact: true }).tap();
+      await expect(row).toHaveCount(0);
     } finally {
       const services = (await client.getDaemonConfig()).config.mcpServers ?? {};
       await client.patchDaemonConfig({
@@ -1304,6 +1333,112 @@ test.describe("manual MCP compact", () => {
       });
     }
   });
+});
+
+test("manual MCP lifecycle supports pending failure retry and keyboard delete confirmation", async ({
+  page,
+  pluginEnvironment,
+}, testInfo) => {
+  const { client } = pluginEnvironment;
+  const service = {
+    name: "Lifecycle tools",
+    enabled: true,
+    config: { type: "http" as const, url: "https://example.invalid/lifecycle" },
+  };
+  let fail = false;
+  let hold = false;
+  const held: { send(message: string | Buffer): void; message: string | Buffer }[] = [];
+  await page.routeWebSocket(daemonWsRoutePattern(), (browser) => {
+    const server = browser.connectToServer();
+    browser.onMessage((message) => {
+      const request = typeof message === "string" ? JSON.parse(message).message : undefined;
+      if (request?.type === "set_daemon_config_request") {
+        if (fail) {
+          browser.send(
+            JSON.stringify({
+              type: "session",
+              message: {
+                type: "rpc_error",
+                payload: {
+                  requestId: request.requestId,
+                  requestType: request.type,
+                  error: "Fictional lifecycle failure",
+                  code: "handler_error",
+                },
+              },
+            }),
+          );
+          return;
+        }
+        if (hold) {
+          held.push({ send: server.send.bind(server), message });
+          return;
+        }
+      }
+      server.send(message);
+    });
+    server.onMessage((message) => browser.send(message));
+  });
+  try {
+    await client.patchDaemonConfig({ mcpServers: { lifecycle: service } });
+    await gotoAppShell(page);
+    await openSettings(page);
+    await page.getByTestId("settings-host-section-mcp").click();
+    const row = page.getByTestId("mcp-manual-lifecycle");
+    await expect(row.getByRole("button", { name: "Disable", exact: true })).toBeVisible();
+    hold = true;
+    await row.getByRole("button", { name: "Disable", exact: true }).click();
+    await expect.poll(() => held.length).toBe(1);
+    await expect(row.getByRole("button", { name: "Edit", exact: true })).toBeDisabled();
+    await expect(page.getByTestId("mcp-add")).toBeDisabled();
+    hold = false;
+    for (const reply of held.splice(0)) reply.send(reply.message);
+    await expect(row.getByText("Disabled", { exact: true })).toBeVisible();
+    expect((await client.getDaemonConfig()).config.mcpServers?.lifecycle).toEqual({
+      ...service,
+      enabled: false,
+    });
+    fail = true;
+    await row.getByRole("button", { name: "Enable", exact: true }).click();
+    await expect(
+      page.getByText("Unable to update MCP service. Retry.", { exact: true }),
+    ).toBeVisible();
+    await expect(row.getByText("Disabled", { exact: true })).toBeVisible();
+    fail = false;
+    await row.getByRole("button", { name: "Enable", exact: true }).focus();
+    await page.keyboard.press("Enter");
+    await expect(row.getByRole("button", { name: "Disable", exact: true })).toBeVisible();
+    expect((await client.getDaemonConfig()).config.mcpServers?.lifecycle).toEqual(service);
+    await page.screenshot({
+      path: testInfo.outputPath("manual-mcp-lifecycle-desktop.png"),
+      fullPage: true,
+    });
+    page.once("dialog", (dialog) => dialog.dismiss());
+    await row.getByRole("button", { name: "Delete", exact: true }).click();
+    await expect(row.getByRole("button", { name: "Delete", exact: true })).toBeEnabled();
+    expect((await client.getDaemonConfig()).config.mcpServers?.lifecycle).toEqual(service);
+    fail = true;
+    page.once("dialog", (dialog) => dialog.accept());
+    await row.getByRole("button", { name: "Delete", exact: true }).click();
+    await expect(
+      page.getByText("Unable to update MCP service. Retry.", { exact: true }),
+    ).toBeVisible();
+    await expect(row).toBeVisible();
+    fail = false;
+    page.once("dialog", async (dialog) => {
+      expect(dialog.message()).toContain("Delete Lifecycle tools?");
+      await dialog.accept();
+    });
+    await row.getByRole("button", { name: "Delete", exact: true }).focus();
+    await page.keyboard.press("Enter");
+    await expect(row).toHaveCount(0);
+    await expect(page.getByText("MCP service deleted", { exact: true })).toBeVisible();
+    await expect(page.getByText("No MCP services registered", { exact: true })).toBeVisible();
+    expect((await client.getDaemonConfig()).config.mcpServers?.lifecycle).toBeUndefined();
+  } finally {
+    for (const reply of held.splice(0)) reply.send(reply.message);
+    await client.patchDaemonConfig({ mcpServers: { lifecycle: null } });
+  }
 });
 
 test("manual MCP JSON editing retains drafts and round trips all transports", async ({

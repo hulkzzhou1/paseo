@@ -4,13 +4,15 @@ import type {
   PluginListItem,
   PluginMcpServiceSummary,
 } from "@getpaseo/protocol/messages";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { randomUUID } from "expo-crypto";
 import { McpServiceForm } from "./mcp-service-form";
 import { router } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
+import { confirmDialog } from "@/utils/confirm-dialog";
 import { SettingsCard, SettingsRow, SettingsSection } from "@/components/settings";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -77,7 +79,16 @@ function McpServices({
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<{ id: string; service?: ManagedMcpService } | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [feedback, setFeedback] = useState<{ kind: "success" | "error"; message: string } | null>(
+    null,
+  );
+  const active = useRef(true);
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
   const hostLabel = useHosts().find((host) => host.serverId === serverId)?.label ?? serverId;
   const queryKey = useMemo(
     () => ["plugin-mcp-services", serverId, clientGeneration, connectionEpoch] as const,
@@ -121,12 +132,12 @@ function McpServices({
     void refresh();
   }, [refresh]);
   const add = useCallback(() => {
-    setSaved(false);
+    setFeedback(null);
     setEditing({ id: `m${randomUUID()}` });
   }, []);
   const cancel = useCallback(() => setEditing(null), []);
   const edit = useCallback((id: string, service: ManagedMcpService) => {
-    setSaved(false);
+    setFeedback(null);
     setEditing({ id, service });
   }, []);
   const save = useCallback(
@@ -134,11 +145,46 @@ function McpServices({
       if (!editing) return;
       await client.patchDaemonConfig({ mcpServers: { [editing.id]: service } });
       setEditing(null);
-      setSaved(true);
+      setFeedback({ kind: "success", message: t("mcp.saved") });
       await refresh();
     },
-    [client, editing, refresh],
+    [client, editing, refresh, t],
   );
+  const mutation = useMutation({
+    mutationFn: async ({ id, service, action }: ManualMcpAction) => {
+      if (action === "delete") {
+        const confirmed = await confirmDialog({
+          title: t("mcp.deleteTitle", { name: service.name }),
+          message: t("mcp.deleteHint"),
+          confirmLabel: t("mcp.delete"),
+          cancelLabel: t("common.actions.cancel"),
+          destructive: true,
+        });
+        if (!confirmed || !active.current) return null;
+      }
+      const replacement = action === "delete" ? null : { ...service, enabled: !service.enabled };
+      await client.patchDaemonConfig({ mcpServers: { [id]: replacement } });
+      if (action === "delete") return t("mcp.deleted");
+      return t(service.enabled ? "mcp.serviceDisabled" : "mcp.serviceEnabled");
+    },
+    onSuccess: async (message) => {
+      if (!active.current || message === null) return;
+      setFeedback({ kind: "success", message });
+      await refresh();
+    },
+    onError: () => {
+      if (active.current) setFeedback({ kind: "error", message: t("mcp.updateError") });
+    },
+  });
+  const change = useCallback(
+    (operation: ManualMcpAction) => {
+      if (mutation.isPending) return;
+      setFeedback(null);
+      mutation.mutate(operation);
+    },
+    [mutation],
+  );
+  const actionsDisabled = editing !== null || mutation.isPending;
   if (services.isError && !services.data)
     return (
       <Alert variant="error" title={t("mcp.loadError")}>
@@ -152,23 +198,25 @@ function McpServices({
   const manual = Object.entries(services.data?.manual ?? {});
   return (
     <SettingsSection title={hostLabel} info={t("mcp.runtimeHint")} testID="mcp-services-section">
-      <Button
-        variant="outline"
-        size="sm"
-        testID="mcp-add"
-        onPress={add}
-        disabled={editing !== null}
-      >
+      <Button variant="outline" size="sm" testID="mcp-add" onPress={add} disabled={actionsDisabled}>
         {t("mcp.add")}
       </Button>
-      {saved ? <Alert title={t("mcp.saved")} /> : null}
+      {mutation.isPending ? <Alert title={t("mcp.updating")} /> : null}
+      {feedback ? <Alert variant={feedback.kind} title={feedback.message} /> : null}
       {editing ? (
         <McpServiceForm key={editing.id} service={editing.service} save={save} cancel={cancel} />
       ) : null}
       {services.isError ? <Alert variant="error" title={t("mcp.loadError")} /> : null}
       <SettingsCard>
         {manual.map(([id, service]) => (
-          <ManualMcpRow key={id} id={id} service={service} edit={edit} editing={editing !== null} />
+          <ManualMcpRow
+            key={id}
+            id={id}
+            service={service}
+            edit={edit}
+            change={change}
+            disabled={actionsDisabled}
+          />
         ))}
         {plugins.length
           ? plugins.map((plugin) =>
@@ -212,15 +260,25 @@ function ManualMcpRow({
   id,
   service,
   edit,
-  editing,
+  change,
+  disabled,
 }: {
   id: string;
   service: ManagedMcpService;
   edit: (id: string, service: ManagedMcpService) => void;
-  editing: boolean;
+  change: (operation: ManualMcpAction) => void;
+  disabled: boolean;
 }) {
   const { t } = useTranslation();
   const onEdit = useCallback(() => edit(id, service), [edit, id, service]);
+  const toggle = useCallback(
+    () => change({ id, service, action: "toggle" }),
+    [change, id, service],
+  );
+  const remove = useCallback(
+    () => change({ id, service, action: "delete" }),
+    [change, id, service],
+  );
   const badge = useMemo(
     () =>
       !service.enabled ? <StatusBadge label={t("mcp.disabled")} variant="muted" /> : undefined,
@@ -233,9 +291,27 @@ function ManualMcpRow({
       testID={`mcp-manual-${id}`}
       labelAccessory={badge}
     >
-      <Button variant="outline" size="sm" disabled={editing} onPress={onEdit}>
-        {t("mcp.edit")}
-      </Button>
+      <View style={styles.actions}>
+        <Button variant="outline" size="sm" disabled={disabled} onPress={onEdit}>
+          {t("mcp.edit")}
+        </Button>
+        <Button variant="outline" size="sm" disabled={disabled} onPress={toggle}>
+          {t(service.enabled ? "mcp.disable" : "mcp.enable")}
+        </Button>
+        <Button variant="outline" size="sm" disabled={disabled} onPress={remove}>
+          {t("mcp.delete")}
+        </Button>
+      </View>
     </SettingsRow>
   );
 }
+
+interface ManualMcpAction {
+  id: string;
+  service: ManagedMcpService;
+  action: "toggle" | "delete";
+}
+
+const styles = StyleSheet.create((theme) => ({
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing[2] },
+}));

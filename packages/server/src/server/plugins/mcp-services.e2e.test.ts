@@ -436,6 +436,26 @@ test("manual MCP configuration survives daemon restart and remains isolated by h
       personal: { type: "http", url: "https://personal.example/mcp" },
       paseo_manual_persistent: edited.config,
     });
+    const disabled = { ...edited, enabled: false };
+    await client.patchDaemonConfig({
+      mcpServers: { persistent: disabled, retained: { ...service, name: "Retained service" } },
+    });
+    expect(resumes).toHaveLength(1);
+    expect(launches).toHaveLength(1);
+    expect((await client.getDaemonConfig()).config.mcpServers?.persistent).toEqual(disabled);
+    await client.refreshAgent(agent.id);
+    expect(resumes[1].mcpServers).toEqual({
+      personal: { type: "http", url: "https://personal.example/mcp" },
+      paseo_manual_retained: service.config,
+    });
+    await client.patchDaemonConfig({ mcpServers: { persistent: edited } });
+    await client.refreshAgent(agent.id);
+    expect(resumes[2].mcpServers).toEqual({
+      personal: { type: "http", url: "https://personal.example/mcp" },
+      paseo_manual_persistent: edited.config,
+      paseo_manual_retained: service.config,
+    });
+    await client.patchDaemonConfig({ mcpServers: { persistent: disabled } });
     await client.archiveAgent(agent.id);
     await client.close();
     await first.close();
@@ -458,8 +478,23 @@ test("manual MCP configuration survives daemon restart and remains isolated by h
     restartedClient = new DaemonClient({ url: `ws://127.0.0.1:${target.port}/ws` });
     await restartedClient.connect();
     expect((await restartedClient.getDaemonConfig()).config.mcpServers).toEqual({
-      persistent: edited,
+      persistent: disabled,
+      retained: { ...service, name: "Retained service" },
     });
+    await restartedClient.fetchAgents({ subscribe: {} });
+    const afterRestart = await restartedClient.createAgent({
+      provider: "codex",
+      cwd: first.paseoHome,
+    });
+    expect(launches.at(-1)?.mcpServers).toEqual({ paseo_manual_retained: service.config });
+    await restartedClient.patchDaemonConfig({ mcpServers: { persistent: null } });
+    expect((await restartedClient.getDaemonConfig()).config.mcpServers).toEqual({
+      retained: { ...service, name: "Retained service" },
+    });
+    const resumeCount = resumes.length;
+    await restartedClient.refreshAgent(afterRestart.id);
+    expect(resumes[resumeCount].mcpServers).toEqual({ paseo_manual_retained: service.config });
+    await restartedClient.archiveAgent(afterRestart.id);
     expect((await otherClient.getDaemonConfig()).config.mcpServers).toEqual({});
   } finally {
     await restartedClient?.close();
