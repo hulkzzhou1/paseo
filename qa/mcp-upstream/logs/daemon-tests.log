@@ -1,0 +1,9 @@
+
+ RUN  v4.1.6 <checkout>/packages/server
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  11:06:06
+   Duration  17.40s (transform 9.11s, setup 44ms, import 11.63s, tests 5.58s, environment 0ms)
+
